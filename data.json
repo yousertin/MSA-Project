@@ -7,9 +7,9 @@
 	
 	"NODE": {
 		"1": {
-			"X": -493.0,
-			"Y": -13.5,
-			"Z": 572.51
+			"X": 0.0,
+			"Y": 0.0,
+			"Z": 0.0
 		}
 	},
 	
@@ -47,78 +47,46 @@
 	
 	"BNGR": {
 		"1": {
-			"ux": 0,
-			"uy": 0,
-			"uz": 0,
-			"Rx": 0,
-			"Ry": 0,
-			"Rz": 0
+			"UX": 0,
+			"UY": 0,
+			"UZ": 0,
+			"RX": 0,
+			"RY": 0,
+			"RZ": 0
 		},
 		
 		"2": {
-			"ux": 0,
-			"uy": 0,
-			"uz": 0,
-			"Rx": 0,
-			"Ry": 0,
-			"Rz": 0
+			"UX": 0,
+			"UY": 0,
+			"UZ": 0,
+			"RX": 0,
+			"RY": 0,
+			"RZ": 0
 		}
 	},
 	
 	"MATL": {
 		"1": {
-			"TYPE": "CONC",
 			"NAME": "C50 CONCRETE",
-			"HE_SPEC": 0.0,
-			"HE_COND": 0.0,
-			"PLMT": 0,
-			"P_NAME": "",
-			"bMASS_DENS": false,
-			"DAMP_RAT": 0.05,
-			"PARAM": [
-				{
-					"P_TYPE": 1,
-					"STANDARD": "JTG04(RC)",
-					"CODE": "",
-					"DB": "C50",
-					"bELAST": false,
-					"ELAST": 3518020.9347738526
-				}
-			]
-		}
+			"E": 3.518e9,
+			"NU": 0.2,
+			"TEMPCOEF": 1.0
+		},
 	},
 	
 	"SECT": {
 		"1": {
-			"SECTTYPE": "DBUSER",
-			"SECT_NAME": "上弦杆",
-			"SECT_BEFORE": {
-				"OFFSET_PT": "CC",
-				"OFFSET_CENTER": 0,
-				"USER_OFFSET_REF": 0,
-				"HORZ_OFFSET_OPT": 0,
-				"USERDEF_OFFSET_YI": 0.0,
-				"VERT_OFFSET_OPT": 0,
-				"USERDEF_OFFSET_ZI": 0.0,
-				"USE_SHEAR_DEFORM": true,
-				"USE_WARPING_EFFECT": false,
-				"SHAPE": "B",
-				"DATATYPE": 2,
-				"SECT_I": {
-					"vSIZE": [
-						0.824,
-						0.648,
-						0.024,
-						0.024,
-						0.0,
-						0.024,
-						0.0,
-						0.0,
-						0.0,
-						0.0
-					]
-				}
-			}
+			"A": 1.0,
+			"Iy": 1.0,
+			"Iz": 1.0,
+			"J": 1.0
+		},
+		
+		"2": {
+			"A": 1.0,
+			"Iy": 1.0,
+			"Iz": 1.0,
+			"J": 1.0
 		},
 	},
 	
