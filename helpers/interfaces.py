@@ -307,8 +307,14 @@ def read_element_loads(json_file, load_key="ELEMLOAD"):
 
     Output format:
     {
-        1: [q, qANGLE, P, PLOCATION, PANGLE],
-        2: [q, qANGLE, P, PLOCATION, PANGLE],
+        1: [Tx, T_location,
+            qy, qyANGLE, qz, qzANGLE,
+            Py, PyLOCATION, PyANGLE,
+            Pz, PzLOCATION, PzANGLE],
+        2: [Tx, T_location,
+            qy, qyANGLE, qz, qzANGLE,
+            Py, PyLOCATION, PyANGLE,
+            Pz, PzLOCATION, PzANGLE],
         ...
     }
 
@@ -323,8 +329,11 @@ def read_element_loads(json_file, load_key="ELEMLOAD"):
     -------
     dict
         Dictionary whose keys are element IDs (int),
-        and whose values are lists of 5 numbers:
-        [q, qANGLE, P, PLOCATION, PANGLE]
+        and whose values are lists of 12 numbers:
+        [Tx, T_location,
+        qy, qyANGLE, qz, qzANGLE,
+        Py, PyLOCATION, PyANGLE,
+        Pz, PzLOCATION, PzANGLE]
     """
     with open(json_file, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -338,13 +347,23 @@ def read_element_loads(json_file, load_key="ELEMLOAD"):
     for elem_id_str, load_data in raw_elem_loads.items():
         elem_id = int(elem_id_str)
 
-        q = load_data.get("q", 0.0)
-        q_angle = load_data.get("qANGLE", 0.0)
-        p = load_data.get("P", 0.0)
-        p_location = load_data.get("PLOCATION", 0.0)
-        p_angle = load_data.get("PANGLE", 0.0)
+        Tx = load_data.get("Tx", 0.0)
+        T_location = load_data.get("TLOCATION", 0.0)
+        qy = load_data.get("qy", 0.0)
+        qy_angle = load_data.get("qyANGLE", 0.0)
+        qz = load_data.get("qz", 0.0)
+        qz_angle = load_data.get("qzANGLE", 0.0)
+        py = load_data.get("P", 0.0)
+        py_location = load_data.get("PLOCATION", 0.0)
+        py_angle = load_data.get("PANGLE", 0.0)
+        pz = load_data.get("P", 0.0)
+        pz_location = load_data.get("PLOCATION", 0.0)
+        pz_angle = load_data.get("PANGLE", 0.0)
 
-        element_loads[elem_id] = [q, q_angle, p, p_location, p_angle]
+        element_loads[elem_id] = [Tx, T_location,
+                                  qy, qy_angle, qz, qz_angle,
+                                  py, py_location, py_angle,
+                                  pz, pz_location, pz_angle]
 
     return element_loads
 
