@@ -347,3 +347,85 @@ def read_element_loads(json_file, load_key="ELEMLOAD"):
         element_loads[elem_id] = [q, q_angle, p, p_location, p_angle]
 
     return element_loads
+
+
+def read_temperature_loads(json_file, tpld_key="TPLD"):
+    """
+    Read element temperature loads from a JSON file.
+
+    Output format:
+    {
+        1: 0.0,
+        2: 0.0,
+        ...
+    }
+
+    Parameters
+    ----------
+    json_file : str
+        Path to the JSON file.
+    tpld_key : str
+        Top-level key storing the temperature load data.
+
+    Returns
+    -------
+    dict
+        Dictionary whose keys are element IDs (int),
+        and whose values are temperature load values.
+    """
+    with open(json_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    if tpld_key not in data:
+        raise KeyError(f"Key '{tpld_key}' not found in the JSON file.")
+
+    raw_temperature_loads = data[tpld_key]
+    temperature_loads = {}
+
+    for elem_id_str, load_data in raw_temperature_loads.items():
+        elem_id = int(elem_id_str)
+        temp = load_data.get("TEMP", 0.0)
+        temperature_loads[elem_id] = temp
+
+    return temperature_loads
+
+
+def read_fabrication_errors(json_file, fabr_key="FABR"):
+    """
+    Read element fabrication error equivalent loads from a JSON file.
+
+    Output format:
+    {
+        1: 0.0,
+        2: 0.0,
+        ...
+    }
+
+    Parameters
+    ----------
+    json_file : str
+        Path to the JSON file.
+    fabr_key : str
+        Top-level key storing the fabrication error data.
+
+    Returns
+    -------
+    dict
+        Dictionary whose keys are element IDs (int),
+        and whose values are fabrication error values.
+    """
+    with open(json_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    if fabr_key not in data:
+        raise KeyError(f"Key '{fabr_key}' not found in the JSON file.")
+
+    raw_fabrication_errors = data[fabr_key]
+    fabrication_errors = {}
+
+    for elem_id_str, error_data in raw_fabrication_errors.items():
+        elem_id = int(elem_id_str)
+        error = error_data.get("ERROR", 0.0)
+        fabrication_errors[elem_id] = error
+
+    return fabrication_errors
