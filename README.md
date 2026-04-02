@@ -93,7 +93,6 @@ The `ELEM` block defines element connectivity and element properties.
         "MATL": 1,
         "SECT": 1,
         "NODE": [1, 2],
-        "MTX": 0,
         "MTY": 0,
         "MTZ": 0
   }
@@ -109,9 +108,11 @@ The `ELEM` block defines element connectivity and element properties.
 - `MATL`: material ID
 - `SECT`: section ID
 - `NODE`: two end nodes of the element
-- `MTX`, `MTY`, `MTZ`: release-type indicators used by the program
+- `MTY`, `MTZ`: release-type indicators used by the program
 
-### Meaning of `MTX`, `MTY`, `MTZ`
+### Meaning of `MTY`, `MTZ`
+
+Here, `Y` / `Z` indicates the `MT` value in the plane associated with the local y-axis or z-axis, respectively.
 
 Each of these fields uses the following integer code:
 
@@ -143,8 +144,7 @@ then:
     "MATL": 2,
     "SECT": 2,
     "NODE": [3, 4],
-    "MTX": 1,
-    "MTY": 0,
+    "MTY": 1,
     "MTZ": 0
 }
 ```
