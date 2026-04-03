@@ -93,7 +93,6 @@ The `ELEM` block defines element connectivity and element properties.
         "MATL": 1,
         "SECT": 1,
         "NODE": [1, 2],
-        "MTX": 0,
         "MTY": 0,
         "MTZ": 0
   }
@@ -109,9 +108,11 @@ The `ELEM` block defines element connectivity and element properties.
 - `MATL`: material ID
 - `SECT`: section ID
 - `NODE`: two end nodes of the element
-- `MTX`, `MTY`, `MTZ`: release-type indicators used by the program
+- `MTY`, `MTZ`: release-type indicators used by the program
 
-### Meaning of `MTX`, `MTY`, `MTZ`
+### Meaning of `MTY`, `MTZ`
+
+Here, `Y` / `Z` indicates the `MT` value in the plane associated with the local y-axis or z-axis, respectively.
 
 Each of these fields uses the following integer code:
 
@@ -143,8 +144,7 @@ then:
     "MATL": 2,
     "SECT": 2,
     "NODE": [3, 4],
-    "MTX": 1,
-    "MTY": 0,
+    "MTY": 1,
     "MTZ": 0
 }
 ```
@@ -333,11 +333,18 @@ The `MBLD` block defines member loads.
 ```json
 "MBLD": {
     "1": {
-        "q": 0.0,
-        "qANGLE": 0.0,
-        "P": 0.0,
-        "PLOCATION": 0.0,
-        "PANGLE": 0.0
+        "Tx": 0.0,
+        "TLOCATION": 0.0,
+        "qy": 0.0,
+        "qyANGLE": 0.0,
+        "qz": 0.0,
+        "qzANGLE": 0.0,
+        "Py": 0.0,
+        "PyLOCATION": 0.0,
+        "PyANGLE": 0.0,
+        "Pz": 0.0,
+        "PzLOCATION": 0.0,
+        "PzANGLE": 0.0
   }
 }
 ```
@@ -346,11 +353,19 @@ Here the key corresponds to the element ID.
 
 ### Fields
 
-- `q`: distributed load magnitude
-- `qANGLE`: distributed load direction angle
-- `P`: concentrated load magnitude
-- `PLOCATION`: location of the concentrated load along the member
-- `PANGLE`: concentrated load direction angle
+- `Tx`: torque magnitude in the plane associated with the local x-axis
+- `TLOCATION`: relative location of the concentrated torque along the member (x / L) in the direction associated with the local x-axis
+- `qy`: distributed load magnitude in the plane associated with the local y-axis
+- `qyANGLE`: distributed load direction angle in the plane associated with the local y-axis
+- `qz`: distributed load magnitude in the plane associated with the local z-axis
+- `qzANGLE`: distributed load direction angle in the plane associated with the local z-axis
+- `Py`: concentrated load magnitude in the plane associated with the local y-axis
+- `PyLOCATION`: relative location of the concentrated load along the member (x / L) in the plane associated with the local y-axis
+- `PyANGLE`: concentrated load direction angle in the plane associated with the local y-axis
+- `Pz`: concentrated load magnitude in the plane associated with the local z-axis
+- `PzLOCATION`: relative location of the concentrated load along the member (x / L) in the plane associated with the local z-axis
+- `PzANGLE`: concentrated load direction angle in the plane associated with the local z-axis
+- **Angle definition**: angles follow the Cartesian convention in the corresponding local plane, i.e., 0° is along the positive local x-axis, 90° is along the positive local y-axis in the local x-y plane, and 90° is along the positive local z-axis in the local x-z plane.
 
 ### Example
 

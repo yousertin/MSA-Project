@@ -1,0 +1,13 @@
+name: test
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python==3.12.12 # Core Python language version used throughout the course
+  - numpy==2.4.0 # Fundamental array and numerical computing library
+  - scipy==1.16.3 # Scientific computing tools (linear algebra, optimization, integration)
+  - matplotlib==3.10.8 # Plotting and visualization library for figures and results
+  - plotly==6.5.2 # Interactive plotting library for web-based visualizations
+  - pandas==2.3.3 # Data structures and tools for tabular and time-series data
+  - ipykernel==7.1.0 # Jupyter kernel enabling notebooks and VS Code Interactive (#%%)
+  - jupyterlab==4.5.1 # Modern Jupyter development environment (recommended UI)

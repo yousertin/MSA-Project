@@ -22,7 +22,6 @@
 				1,
 				2
 			],
-			"MTX": 0,
 			"MTY": 0,
 			"MTZ": 0
 		},
@@ -35,7 +34,6 @@
 				3,
 				4
 			],
-			"MTX": 1,
 			"MTY": 1,
 			"MTZ": 1
 		},
@@ -48,7 +46,6 @@
 				5,
 				6
 			],
-			"MTX": 2,
 			"MTY": 2,
 			"MTZ": 2
 		}
@@ -126,20 +123,34 @@
 	
 	"MBLD": {
 		"1": {
-			"q": 0.0,
-			"qANGLE": 0.0,
-			"P": 0.0,
-			"PLOCATION": 0.0,
-			"PANGLE": 0.0
-		},
+        	"Tx": 0.0,
+			"TLOCATION": 0.0,
+        	"qy": 0.0,
+        	"qyANGLE": 0.0,
+        	"qz": 0.0,
+        	"qzANGLE": 0.0,
+        	"Py": 0.0,
+        	"PyLOCATION": 0.0,
+        	"PyANGLE": 0.0,
+        	"Pz": 0.0,
+        	"PzLOCATION": 0.0,
+        	"PzANGLE": 0.0
+  		},
 		
 		"2": {
-			"q": 0.0,
-			"qANGLE": 0.0,
-			"P": 0.0,
-			"PLOCATION": 0.0,
-			"PANGLE": 0.0
-		}
+        	"Tx": 0.0,
+			"TLOCATION": 0.0,
+        	"qy": 0.0,
+        	"qyANGLE": 0.0,
+        	"qz": 0.0,
+        	"qzANGLE": 0.0,
+        	"Py": 0.0,
+        	"PyLOCATION": 0.0,
+        	"PyANGLE": 0.0,
+        	"Pz": 0.0,
+        	"PzLOCATION": 0.0,
+        	"PzANGLE": 0.0
+  		}
 	},
 	
 	"TPLD": {
