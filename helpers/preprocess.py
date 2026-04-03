@@ -143,6 +143,18 @@ def fef_cal(elem_load, L, angle_unit="deg"):
     return fef_local
 
 
+def release_dof(dof, k_mod, Q_mod):
+    """
+    Helper function to apply moment release conditions by modifying the local stiffness matrix
+    and the corresponding local load vector.
+    """
+    k_mod[dof, :] = 0.0
+    k_mod[:, dof] = 0.0
+    Q_mod[dof] = 0.0
+
+    return k_mod, Q_mod
+
+
 def moment_release(MTY, MTZ, k, Q):
     """
     Apply 3D moment release conditions to the local element stiffness matrix
@@ -187,12 +199,7 @@ def moment_release(MTY, MTZ, k, Q):
 
     if Q_mod.shape not in [(12,), (12, 1)]:
         raise ValueError("Q must be a 12-component vector for a 3D frame element.")
-
-    def release_dof(dof):
-        k_mod[dof, :] = 0.0
-        k_mod[:, dof] = 0.0
-        Q_mod[dof] = 0.0
-
+    
     # -----------------------------------
     # release about local y-axis
     # thy_i -> index 4
@@ -201,12 +208,12 @@ def moment_release(MTY, MTZ, k, Q):
     if MTY == 0:
         pass
     elif MTY == 1:
-        release_dof(4)
+        release_dof(4, k_mod, Q_mod)
     elif MTY == 2:
-        release_dof(10)
+        release_dof(10, k_mod, Q_mod)
     elif MTY == 3:
-        release_dof(4)
-        release_dof(10)
+        release_dof(4, k_mod, Q_mod)
+        release_dof(10, k_mod, Q_mod)
     else:
         raise ValueError("MTY can only take the values 0, 1, 2, or 3.")
 
@@ -218,12 +225,12 @@ def moment_release(MTY, MTZ, k, Q):
     if MTZ == 0:
         pass
     elif MTZ == 1:
-        release_dof(5)
+        release_dof(5, k_mod, Q_mod)
     elif MTZ == 2:
-        release_dof(11)
+        release_dof(11, k_mod, Q_mod)
     elif MTZ == 3:
-        release_dof(5)
-        release_dof(11)
+        release_dof(5, k_mod, Q_mod)
+        release_dof(11, k_mod, Q_mod)
     else:
         raise ValueError("MTZ can only take the values 0, 1, 2, or 3.")
 
