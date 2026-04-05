@@ -1,34 +1,34 @@
 import assembly
-import elements
+import element
 import interfaces
 import partition
 import preprocess
 import numpy as np
 
-k_list = []
-T_list = []
-Qf_list = []
-map_list = []
-for e_id in elements:
-    c, s, L = elements_csl[e_id]
-    load_type, Fx, Fy, M = elements_loaded[e_id]
 
-    kl = frame_element_kl(E, A, I, L)
-    T = frame_transformation_matrix(c, s)
-    Qf = FEF_cal(load_type, Fx, Fy, M, L)
-    m = element_dof_map_1based(elements[e_id][0], elements[e_id][1])
 
-    k_list.append(kl)
-    T_list.append(T)
-    Qf_list.append(Qf)
-    map_list.append(m)
 
-print(k_list)
-print(T_list)
-print(Qf_list)
-print(map_list)
 
-ndof = int(np.max(np.concatenate(map_list)))
+
+
+    k_list = []
+    T_list = []
+    Qf_list = []
+    map_list = []
+    for e_id in element:
+
+
+        kl = frame_element_kl(E, A, I, L)
+        T = frame_transformation_matrix(c, s)
+        Qf = FEF_cal(load_type, Fx, Fy, M, L)
+        m = element_dof_map_1based(element[e_id][0], element[e_id][1])
+
+        k_list.append(kl)
+        T_list.append(T)
+        Qf_list.append(Qf)
+        map_list.append(m)
+
+    ndof = int(np.max(np.concatenate(map_list)))
 
 
 def solve_unknown(ndof, k_list, T_list, map_list,

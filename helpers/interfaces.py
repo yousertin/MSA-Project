@@ -8,8 +8,8 @@ def read_nodes(json_file, node_key="NODE"):
 
     Output format:
     {
-        1: (x, y, z),
-        2: (x, y, z),
+        1: [x, y, z],
+        2: [x, y, z],
         ...
     }
 
@@ -24,8 +24,8 @@ def read_nodes(json_file, node_key="NODE"):
     -------
     dict
         Dictionary whose keys are node IDs (int),
-        and whose values are 3D coordinate tuples:
-        (x, y, z)
+        and whose values are 3D coordinate lists:
+        [x, y, z]
     """
     with open(json_file, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -43,7 +43,7 @@ def read_nodes(json_file, node_key="NODE"):
         y = node_data.get("Y", 0.0)
         z = node_data.get("Z", 0.0)
 
-        nodes[node_id] = (x, y, z)
+        nodes[node_id] = [x, y, z]
 
     return nodes
 
@@ -54,13 +54,13 @@ def read_elements(json_file, elem_key="ELEM"):
 
     Output format:
     {
-        1: ["B", 1, 1, [1, 2], 0, 0],
-        2: ["T", 2, 1, [2, 3], 1, 0],
+        1: ["B", 1, 1, [1, 2], 0],
+        2: ["T", 2, 1, [2, 3], 1],
         ...
     }
 
     The list order is:
-    [TYPE_initial, MATL, SECT, NODE, MTY, MTZ]
+    [TYPE_initial, MATL, SECT, NODE, MT]
 
     Rules
     -----
@@ -81,7 +81,7 @@ def read_elements(json_file, elem_key="ELEM"):
     dict
         Dictionary whose keys are element IDs (int),
         and whose values are lists:
-        [TYPE_initial, MATL, SECT, NODE, MTY, MTZ]
+        [TYPE_initial, MATL, SECT, NODE, MT]
     """
     with open(json_file, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -101,10 +101,9 @@ def read_elements(json_file, elem_key="ELEM"):
         matl = elem_data.get("MATL", 0)
         sect = elem_data.get("SECT", 0)
         node = elem_data.get("NODE", [])
-        mty = elem_data.get("MTY", 0)
-        mtz = elem_data.get("MTZ", 0)
+        mt = elem_data.get("MT", 0)
 
-        elements[elem_id] = [elem_type_initial, matl, sect, node, mty, mtz]
+        elements[elem_id] = [elem_type_initial, matl, sect, node, mt]
 
     return elements
 
@@ -166,8 +165,8 @@ def read_materials(json_file, matl_key="MATL"):
 
     Output format:
     {
-        1: [E, TEMPCOEF],
-        2: [E, TEMPCOEF],
+        1: [E, TEMPCOEF, nu],
+        2: [E, TEMPCOEF, nu],
         ...
     }
 
@@ -182,8 +181,8 @@ def read_materials(json_file, matl_key="MATL"):
     -------
     dict
         Dictionary whose keys are material IDs (int),
-        and whose values are lists of 2 numbers:
-        [E, TEMPCOEF]
+        and whose values are lists of 3 numbers:
+        [E, TEMPCOEF, nu]
     """
     with open(json_file, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -199,8 +198,9 @@ def read_materials(json_file, matl_key="MATL"):
 
         E = matl_data.get("E", 0.0)
         tempcoef = matl_data.get("TEMPCOEF", 0.0)
+        nu = matl_data.get("nu", 0.0)
 
-        materials[matl_id] = [E, tempcoef]
+        materials[matl_id] = [E, tempcoef, nu]
 
     return materials
 
@@ -301,7 +301,7 @@ def read_nodal_loads(json_file, load_key="NDLD"):
     return nodal_loads
 
 
-def read_element_loads(json_file, load_key="ELEMLOAD"):
+def read_element_loads(json_file, load_key="MBLD"):
     """
     Read element loads from a JSON file.
 
@@ -360,10 +360,20 @@ def read_element_loads(json_file, load_key="ELEMLOAD"):
         pz_location = load_data.get("PLOCATION", 0.0)
         pz_angle = load_data.get("PANGLE", 0.0)
 
-        element_loads[elem_id] = [Tx, T_location,
-                                  qy, qy_angle, qz, qz_angle,
-                                  py, py_location, py_angle,
-                                  pz, pz_location, pz_angle]
+        element_loads[elem_id] = [
+            Tx,
+            T_location,
+            qy,
+            qy_angle,
+            qz,
+            qz_angle,
+            py,
+            py_location,
+            py_angle,
+            pz,
+            pz_location,
+            pz_angle,
+        ]
 
     return element_loads
 

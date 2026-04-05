@@ -93,8 +93,7 @@ The `ELEM` block defines element connectivity and element properties.
         "MATL": 1,
         "SECT": 1,
         "NODE": [1, 2],
-        "MTY": 0,
-        "MTZ": 0
+        "MT": 0
   }
 }
 ```
@@ -108,11 +107,9 @@ The `ELEM` block defines element connectivity and element properties.
 - `MATL`: material ID
 - `SECT`: section ID
 - `NODE`: two end nodes of the element
-- `MTY`, `MTZ`: release-type indicators used by the program
+- `MT`: release-type indicators used by the program
 
-### Meaning of `MTY`, `MTZ`
-
-Here, `Y` / `Z` indicates the `MT` value in the plane associated with the local y-axis or z-axis, respectively.
+### Meaning of `MT`
 
 Each of these fields uses the following integer code:
 
@@ -144,8 +141,7 @@ then:
     "MATL": 2,
     "SECT": 2,
     "NODE": [3, 4],
-    "MTY": 1,
-    "MTZ": 0
+    "MT": 1
 }
 ```
 
@@ -218,12 +214,14 @@ The `MATL` block defines material properties.
     "1": {
         "NAME": "CONCRETE",
         "E": 3.0e7,
-        "TEMPCOEF": 1.0
+        "TEMPCOEF": 1.0,
+        "nu": 0.3
     },
     "2": {
         "NAME": "STEEL",
         "E": 2.0e8,
-        "TEMPCOEF": 1.0
+        "TEMPCOEF": 1.0,
+        "nu": 0.3
     }
 }
 ```
@@ -233,6 +231,7 @@ The `MATL` block defines material properties.
 - `NAME`: material name
 - `E`: elastic modulus
 - `TEMPCOEF`: thermal coefficient used in temperature loading
+- `nu`: poisson's ratio
 
 ### Example
 
@@ -240,7 +239,8 @@ The `MATL` block defines material properties.
 "1": {
     "NAME": "STEEL",
     "E": 2.0e8,
-    "TEMPCOEF": 1.2e-5
+    "TEMPCOEF": 1.2e-5,
+    "nu": 0.3
 }
 ```
 

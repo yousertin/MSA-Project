@@ -33,6 +33,9 @@ def fef_cal(elem_load, L, angle_unit="deg"):
     ------------
     [Fx_i, Fy_i, Fz_i, Mx_i, My_i, Mz_i, Fx_j, Fy_j, Fz_j, Mx_j, My_j, Mz_j]
     """
+    if elem_load is None:
+        return np.zeros(12, dtype=float)
+
     if len(elem_load) != 12:
         raise ValueError(
             "elem_load must be "
@@ -42,7 +45,20 @@ def fef_cal(elem_load, L, angle_unit="deg"):
     if L <= 0.0:
         raise ValueError("L must be positive.")
 
-    Tx, T_loc, qy, qy_angle, qz, qz_angle, Py, Py_loc, Py_angle, Pz, Pz_loc, Pz_angle = elem_load
+    (
+        Tx,
+        T_loc,
+        qy,
+        qy_angle,
+        qz,
+        qz_angle,
+        Py,
+        Py_loc,
+        Py_angle,
+        Pz,
+        Pz_loc,
+        Pz_angle,
+    ) = elem_load
 
     if not (0.0 <= T_loc <= 1.0):
         raise ValueError("TLOCATION must be in [0, 1].")
@@ -87,12 +103,12 @@ def fef_cal(elem_load, L, angle_unit="deg"):
     fef_local[1] += -qy_y * L / 2.0
     fef_local[5] += -qy_y * L**2 / 12.0
     fef_local[7] += -qy_y * L / 2.0
-    fef_local[11] +=  qy_y * L**2 / 12.0
+    fef_local[11] += qy_y * L**2 / 12.0
 
     # full-span distributed load in local z direction
     # causes bending about local y
     fef_local[2] += -qz_z * L / 2.0
-    fef_local[4] +=  qz_z * L**2 / 12.0
+    fef_local[4] += qz_z * L**2 / 12.0
     fef_local[8] += -qz_z * L / 2.0
     fef_local[10] += -qz_z * L**2 / 12.0
 
@@ -112,7 +128,7 @@ def fef_cal(elem_load, L, angle_unit="deg"):
     fef_local[1] += -Py_y * b**2 * (3.0 * a + b) / L**3
     fef_local[5] += -Py_y * a * b**2 / L**2
     fef_local[7] += -Py_y * a**2 * (a + 3.0 * b) / L**3
-    fef_local[11] +=  Py_y * a**2 * b / L**2
+    fef_local[11] += Py_y * a**2 * b / L**2
 
     # 3. concentrated load in local x-z plane
 
@@ -128,7 +144,7 @@ def fef_cal(elem_load, L, angle_unit="deg"):
 
     # transverse z component -> bending about y
     fef_local[2] += -Pz_z * b**2 * (3.0 * a + b) / L**3
-    fef_local[4] +=  Pz_z * a * b**2 / L**2
+    fef_local[4] += Pz_z * a * b**2 / L**2
     fef_local[8] += -Pz_z * a**2 * (a + 3.0 * b) / L**3
     fef_local[10] += -Pz_z * a**2 * b / L**2
 
@@ -155,7 +171,7 @@ def release_dof(dof, k_mod, Q_mod):
     return k_mod, Q_mod
 
 
-def moment_release(MTY, MTZ, k, Q):
+def moment_release(MT, k, Q):
     """
     Apply 3D moment release conditions to the local element stiffness matrix
     and the corresponding local load vector.
@@ -167,7 +183,7 @@ def moment_release(MTY, MTZ, k, Q):
 
     Release definition
     ------------------
-    For both MTY and MTZ:
+    For MT:
     0 : no release
     1 : release i-end
     2 : release j-end
@@ -175,10 +191,8 @@ def moment_release(MTY, MTZ, k, Q):
 
     Parameters
     ----------
-    MTY : int
-        Moment release code about the local y-axis.
-    MTZ : int
-        Moment release code about the local z-axis.
+    MT : int
+        Moment release code.
     k : np.ndarray
         12x12 local element stiffness matrix.
     Q : np.ndarray
@@ -199,40 +213,26 @@ def moment_release(MTY, MTZ, k, Q):
 
     if Q_mod.shape not in [(12,), (12, 1)]:
         raise ValueError("Q must be a 12-component vector for a 3D frame element.")
-    
-    # -----------------------------------
-    # release about local y-axis
-    # thy_i -> index 4
-    # thy_j -> index 10
-    # -----------------------------------
-    if MTY == 0:
-        pass
-    elif MTY == 1:
-        release_dof(4, k_mod, Q_mod)
-    elif MTY == 2:
-        release_dof(10, k_mod, Q_mod)
-    elif MTY == 3:
-        release_dof(4, k_mod, Q_mod)
-        release_dof(10, k_mod, Q_mod)
-    else:
-        raise ValueError("MTY can only take the values 0, 1, 2, or 3.")
 
-    # -----------------------------------
-    # release about local z-axis
-    # thz_i -> index 5
-    # thz_j -> index 11
-    # -----------------------------------
-    if MTZ == 0:
+    if MT == 0:
         pass
-    elif MTZ == 1:
+    elif MT == 1:
+        release_dof(3, k_mod, Q_mod)
+        release_dof(4, k_mod, Q_mod)
         release_dof(5, k_mod, Q_mod)
-    elif MTZ == 2:
+    elif MT == 2:
+        release_dof(9, k_mod, Q_mod)
+        release_dof(10, k_mod, Q_mod)
         release_dof(11, k_mod, Q_mod)
-    elif MTZ == 3:
+    elif MT == 3:
+        release_dof(3, k_mod, Q_mod)
+        release_dof(4, k_mod, Q_mod)
         release_dof(5, k_mod, Q_mod)
+        release_dof(9, k_mod, Q_mod)
+        release_dof(10, k_mod, Q_mod)
         release_dof(11, k_mod, Q_mod)
     else:
-        raise ValueError("MTZ can only take the values 0, 1, 2, or 3.")
+        raise ValueError("MT can only take the values 0, 1, 2, or 3.")
 
     return k_mod, Q_mod
 
@@ -267,10 +267,7 @@ def heat_cal(T, E, A, alpha):
 
     N_h = E * alpha * A * T
 
-    Qh = [
-        N_h, 0.0, 0.0, 0.0, 0.0, 0.0,
-        -N_h, 0.0, 0.0, 0.0, 0.0, 0.0
-    ]
+    Qh = [N_h, 0.0, 0.0, 0.0, 0.0, 0.0, -N_h, 0.0, 0.0, 0.0, 0.0, 0.0]
 
     return Qh
 
@@ -301,9 +298,6 @@ def fabrication_error_cal(e_a, E, A, L):
 
     N_e = E * A * e_a / L
 
-    Qe = [
-        N_e, 0.0, 0.0, 0.0, 0.0, 0.0,
-        -N_e, 0.0, 0.0, 0.0, 0.0, 0.0
-    ]
+    Qe = [N_e, 0.0, 0.0, 0.0, 0.0, 0.0, -N_e, 0.0, 0.0, 0.0, 0.0, 0.0]
 
     return Qe
