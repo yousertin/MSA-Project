@@ -237,14 +237,14 @@ def moment_release(MT, k, Q):
     return k_mod, Q_mod
 
 
-def heat_cal(T, E, A, alpha):
+def heat_cal(temp, E, A, alpha):
     """
     Calculate local fixed-end force vector for a 3D frame member
     caused by uniform temperature change.
 
     Parameters
     ----------
-    T : float
+    team_loads : float
         Uniform temperature change.
     E : float
         Young's modulus.
@@ -264,8 +264,10 @@ def heat_cal(T, E, A, alpha):
         [Fx_i, Fy_i, Fz_i, Mx_i, My_i, Mz_i,
          Fx_j, Fy_j, Fz_j, Mx_j, My_j, Mz_j]
     """
+    if temp is None:
+        return np.zeros(12, dtype=float)
 
-    N_h = E * alpha * A * T
+    N_h = E * alpha * A * temp
 
     Qh = [N_h, 0.0, 0.0, 0.0, 0.0, 0.0, -N_h, 0.0, 0.0, 0.0, 0.0, 0.0]
 
@@ -295,6 +297,8 @@ def fabrication_error_cal(e_a, E, A, L):
         [Fx_i, Fy_i, Fz_i, Mx_i, My_i, Mz_i,
          Fx_j, Fy_j, Fz_j, Mx_j, My_j, Mz_j]
     """
+    if e_a is None:
+        return np.zeros(12, dtype=float)
 
     N_e = E * A * e_a / L
 

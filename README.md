@@ -1,13 +1,15 @@
 # Abstract
 
-This project is all about a DSM calculator.
+This project presents a Direct Stiffness Method (DSM) calculator for three-dimensional structural analysis. The program is designed to read structural models from a JSON input file, allowing users to define units, nodal coordinates, element connectivity, boundary conditions, material properties, section properties, nodal loads, member loads, temperature loads, and fabrication errors in a clear and organized format. By combining a structured input file with a Jupyter Notebook workflow, the project provides a straightforward and flexible framework for building and analyzing structural systems.
+
+The README is organized to guide users through the full workflow of the program. It first explains how to prepare the JSON input file and how each data block should be modified to define a structural model correctly. It then introduces how to run the notebook and interpret the analysis process. To demonstrate the validity and applicability of the program, the project includes validation examples for a 3D truss structure and a 3D frame structure, followed by a more comprehensive study of a complex structure. Overall, this project aims to provide a practical and extensible DSM-based tool for learning, verification, and structural analysis of 3D systems.
 
 ---
----
 
-# Modifying the JSON Input File
+# I. How to use 
+## (I) Modify the JSON Input File
 
-The program reads the structural model from a JSON file.  
+The program reads the structural model from a JSON file.
 Users can modify the model by editing the corresponding sections in the JSON file.  
 The overall structure is:
 
@@ -26,7 +28,7 @@ The overall structure is:
 }
 ```
 
-## 1. General Rules
+### 1. General Rules
 
 1. All IDs are stored as strings, such as `"1"`, `"2"`, `"3"`.
 2. `NODE`, `ELEM`, `MATL`, and `SECT` IDs must be consistent across the file.
@@ -40,7 +42,7 @@ The overall structure is:
 
 ---
 
-## 2. UNIT
+### 2. UNIT
 
 The `UNIT` block defines the unit system for the entire model.
 
@@ -56,7 +58,7 @@ Normally this block only needs to be set once.
 
 ---
 
-## 3. NODE
+### 3. NODE
 
 The `NODE` block defines nodal coordinates.
 
@@ -82,7 +84,7 @@ To add a new node, create a new ID and provide its coordinates.
 
 ---
 
-## 4. ELEM
+### 4. ELEM
 
 The `ELEM` block defines element connectivity and element properties.
 
@@ -98,7 +100,7 @@ The `ELEM` block defines element connectivity and element properties.
 }
 ```
 
-### Fields
+#### Fields
 
 - `TYPE`: element type
   - `"TRUSS"`
@@ -109,7 +111,7 @@ The `ELEM` block defines element connectivity and element properties.
 - `NODE`: two end nodes of the element
 - `MT`: release-type indicators used by the program
 
-### Meaning of `MT`
+#### Meaning of `MT`
 
 Each of these fields uses the following integer code:
 
@@ -133,7 +135,7 @@ then:
 - node `3` is the **I end**
 - node `4` is the **J end**
 
-### Example
+#### Example
 
 ```json
 "2": {
@@ -171,14 +173,14 @@ The `CONS` block defines constrained degrees of freedom at nodes.
 
 Here the key corresponds to the node ID.
 
-### Meaning
+#### Meaning
 
 - `Ux`, `Uy`, `Uz`: translational constraints
 - `Rx`, `Ry`, `Rz`: rotational constraints
 
 A value of `0` means the corresponding DOF is fixed at zero.
 
-### Example
+#### Example
 
 Fully fixed support at node 1:
 
@@ -205,7 +207,7 @@ Pinned support example:
 
 ---
 
-## 6. MATL
+### 6. MATL
 
 The `MATL` block defines material properties.
 
@@ -226,14 +228,14 @@ The `MATL` block defines material properties.
 }
 ```
 
-### Fields
+#### Fields
 
 - `NAME`: material name
 - `E`: elastic modulus
 - `TEMPCOEF`: thermal coefficient used in temperature loading
 - `nu`: poisson's ratio
 
-### Example
+#### Example
 
 ```json
 "1": {
@@ -248,7 +250,7 @@ Note: under the `kN-m` unit system, elastic modulus should be given in `kN/m^2`.
 
 ---
 
-## 7. SECT
+### 7. SECT
 
 The `SECT` block defines section properties.
 
@@ -263,14 +265,14 @@ The `SECT` block defines section properties.
 }
 ```
 
-### Fields
+#### Fields
 
 - `A`: cross-sectional area
 - `Iy`: second moment of area about local y-axis
 - `Iz`: second moment of area about local z-axis
 - `J`: torsional constant
 
-### Example
+#### Example
 
 ```json
 "2": {
@@ -285,7 +287,7 @@ For truss elements, only `A` is essential, but the current format keeps all four
 
 ---
 
-## 8. NDLD
+### 8. NDLD
 
 The `NDLD` block defines nodal loads.
 
@@ -304,12 +306,12 @@ The `NDLD` block defines nodal loads.
 
 Here the key corresponds to the node ID.
 
-### Fields
+#### Fields
 
 - `Fx`, `Fy`, `Fz`: nodal forces
 - `Mx`, `My`, `Mz`: nodal moments
 
-### Example
+#### Example
 
 Apply a downward force of `100 kN` at node 2:
 
@@ -326,7 +328,7 @@ Apply a downward force of `100 kN` at node 2:
 
 ---
 
-## 9. MBLD
+### 9. MBLD
 
 The `MBLD` block defines member loads.
 
@@ -351,7 +353,7 @@ The `MBLD` block defines member loads.
 
 Here the key corresponds to the element ID.
 
-### Fields
+#### Fields
 
 - `Tx`: torque magnitude in the plane associated with the local x-axis
 - `TLOCATION`: relative location of the concentrated torque along the member (x / L) in the direction associated with the local x-axis
@@ -367,7 +369,7 @@ Here the key corresponds to the element ID.
 - `PzANGLE`: concentrated load direction angle in the plane associated with the local z-axis
 - **Angle definition**: angles follow the Cartesian convention in the corresponding local plane, i.e., 0° is along the positive local x-axis, 90° is along the positive local y-axis in the local x-y plane, and 90° is along the positive local z-axis in the local x-z plane.
 
-### Example
+#### Example
 
 Uniform distributed load on element 1:
 
@@ -395,7 +397,7 @@ Point load on element 2 at midspan:
 
 ---
 
-## 10. TPLD
+### 10. TPLD
 
 The `TPLD` block defines uniform temperature loading for elements.
 
@@ -409,11 +411,11 @@ The `TPLD` block defines uniform temperature loading for elements.
 
 Here the key corresponds to the element ID.
 
-### Field
+#### Field
 
 - `TEMP`: uniform temperature change applied to the element
 
-### Example
+#### Example
 
 Apply a uniform temperature increase of `20 C` to element 1:
 
@@ -425,7 +427,7 @@ Apply a uniform temperature increase of `20 C` to element 1:
 
 ---
 
-## 11. FABR
+### 11. FABR
 
 The `FABR` block defines fabrication error for elements.
 
@@ -439,11 +441,11 @@ The `FABR` block defines fabrication error for elements.
 
 Here the key corresponds to the element ID.
 
-### Field
+#### Field
 
 - `ERROR`: fabrication error assigned to the element
 
-### Example
+#### Example
 
 Apply a fabrication error of `0.002 m` to element 1:
 
@@ -455,7 +457,7 @@ Apply a fabrication error of `0.002 m` to element 1:
 
 ---
 
-## 12. Example Workflow
+### 12. Example Workflow
 
 To build a model, users typically follow these steps:
 
@@ -472,10 +474,32 @@ To build a model, users typically follow these steps:
 
 ---
 
-## 13. Important Notes
+### 13. Important Notes
 
 - Keep all IDs consistent across different blocks
 - Check that each element references valid node, material, and section IDs
 - Check that all values follow the selected unit system
 - Validate the JSON file before running the program
 - If the program reports missing data, first check whether all required IDs and fields are defined correctly
+
+---
+
+## (II) Run the Jupyter Notebook
+
+---
+
+# II. Example of 3D Truss Structure Validation
+
+---
+
+# III. Example of 3D Frame Structure Validation
+
+---
+
+# IV. One Complex Structure Study
+
+---
+
+# Conclusion
+
+---

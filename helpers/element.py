@@ -62,7 +62,7 @@ def build_elements_para(nodes, elements, materials, sections):
         E, alpha, nu = materials[matl]
         A, Iy, Iz, J = sections[sect]
         G = G_cal(E, nu)
-        element_paras[elem_id] = (L, etype, E, G, A, Iy, Iz, J, mt)
+        element_paras[elem_id] = (L, etype, E, G, A, Iy, Iz, J, mt, alpha)
     return element_paras
 
 
