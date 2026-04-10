@@ -1446,6 +1446,406 @@
 				44
 			],
 			"MT": 0
+		},
+		"123": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				1,
+				24
+			],
+			"MT": 0
+		},
+		"124": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				2,
+				23
+			],
+			"MT": 0
+		},
+		"125": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				2,
+				26
+			],
+			"MT": 0
+		},
+		"126": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				3,
+				27
+			],
+			"MT": 0
+		},
+		"127": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				4,
+				24
+			],
+			"MT": 0
+		},
+		"128": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				4,
+				28
+			],
+			"MT": 0
+		},
+		"129": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				5,
+				25
+			],
+			"MT": 0
+		},
+		"130": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				5,
+				29
+			],
+			"MT": 0
+		},
+		"131": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				6,
+				26
+			],
+			"MT": 0
+		},
+		"132": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				6,
+				30
+			],
+			"MT": 0
+		},
+		"133": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				7,
+				27
+			],
+			"MT": 0
+		},
+		"134": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				7,
+				31
+			],
+			"MT": 0
+		},
+		"135": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				8,
+				28
+			],
+			"MT": 0
+		},
+		"136": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				8,
+				32
+			],
+			"MT": 0
+		},
+		"137": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				9,
+				29
+			],
+			"MT": 0
+		},
+		"138": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				9,
+				33
+			],
+			"MT": 0
+		},
+		"139": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				10,
+				30
+			],
+			"MT": 0
+		},
+		"140": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				10,
+				34
+			],
+			"MT": 0
+		},
+		"141": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				11,
+				31
+			],
+			"MT": 0
+		},
+		"142": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				11,
+				35
+			],
+			"MT": 0
+		},
+		"143": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				12,
+				32
+			],
+			"MT": 0
+		},
+		"144": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				12,
+				36
+			],
+			"MT": 0
+		},
+		"145": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				13,
+				33
+			],
+			"MT": 0
+		},
+		"146": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				13,
+				37
+			],
+			"MT": 0
+		},
+		"147": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				14,
+				34
+			],
+			"MT": 0
+		},
+		"148": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				14,
+				38
+			],
+			"MT": 0
+		},
+		"149": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				15,
+				35
+			],
+			"MT": 0
+		},
+		"150": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				15,
+				39
+			],
+			"MT": 0
+		},
+		"151": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				16,
+				36
+			],
+			"MT": 0
+		},
+		"152": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				16,
+				40
+			],
+			"MT": 0
+		},
+		"153": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				17,
+				37
+			],
+			"MT": 0
+		},
+		"154": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				17,
+				41
+			],
+			"MT": 0
+		},
+		"155": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				18,
+				38
+			],
+			"MT": 0
+		},
+		"156": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				18,
+				42
+			],
+			"MT": 0
+		},
+		"157": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				19,
+				39
+			],
+			"MT": 0
+		},
+		"158": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				19,
+				43
+			],
+			"MT": 0
+		},
+		"159": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				20,
+				40
+			],
+			"MT": 0
+		},
+		"160": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				20,
+				44
+			],
+			"MT": 0
+		},
+		"161": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				21,
+				41
+			],
+			"MT": 0
+		},
+		"162": {
+			"TYPE": "TRUSS",
+			"MATL": 1,
+			"SECT": 1,
+			"NODE": [
+				22,
+				42
+			],
+			"MT": 0
 		}
 	},
 	"CONS": {
