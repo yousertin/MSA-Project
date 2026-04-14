@@ -1,8 +1,8 @@
-import assembly
-import element
-import interfaces
-import partition
-import preprocess
+from . import assembly
+from . import element
+from . import interfaces
+from . import partition
+from . import preprocess
 import numpy as np
 
 
