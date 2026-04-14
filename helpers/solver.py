@@ -6,26 +6,28 @@ import preprocess
 import numpy as np
 
 
-def truss_solver(
-    nodes,
-    elements,
-    constraints,
-    materials,
-    sections,
-    nodal_loads,
-    element_loads,
-    temperature_loads,
-    fabrication_loads,
-):
+def truss_solver(filepath):
     """
     A simple solver for truss structures. It assembles the global stiffness matrix,
     applies boundary conditions, and solves for displacements.
 
     Parameters
     ----------
-    nodes : dict
-        A dictionary of node IDs and their coordinates.
+    filepath : str
+        Path to the JSON file containing the structural data.
     """
+
+    nodes = interfaces.read_nodes(filepath)
+    elements = interfaces.read_elements(filepath)
+    constraints = interfaces.read_constraints(filepath)
+    materials = interfaces.read_materials(filepath)
+    sections = interfaces.read_sections(filepath)
+    constraints = interfaces.read_constraints(filepath)
+    F_global = interfaces.read_nodal_loads(filepath)
+    element_loads = interfaces.read_element_loads(filepath)
+    u_global = interfaces.read_support_disp(filepath)
+    temperature_loads = interfaces.read_temperature_loads(filepath)
+    fabrication_loads = interfaces.read_fabrication_errors(filepath)
 
     k_list = []
     T_list = []
@@ -70,9 +72,6 @@ def truss_solver(
     dof_restrained_1based = np.sort(
         np.concatenate((dof_restrained_1based, dof_fictitious_1based))
     )
-
-    F_global = np.zeros(ndof, dtype=float)
-    u_global = np.zeros(ndof, dtype=float)
 
     K_global, F_fef_global = assembly.assemble_global_stiffness_and_fef(
         ndof, k_list, T_list, Qt_list, map_list

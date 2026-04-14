@@ -1,4 +1,5 @@
 import json
+import numpy as np
 
 
 def read_nodes(json_file, node_key="NODE"):
@@ -251,53 +252,74 @@ def read_sections(json_file, sect_key="SECT"):
     return sections
 
 
-def read_nodal_loads(json_file, load_key="NDLD"):
+def read_nodal_loads(json_file, node_key="NODE", load_key="NDLD"):
     """
-    Read nodal loads from a JSON file.
+    Read nodal loads from a JSON file and assemble the global load vector F_global.
 
-    Output format:
-    {
-        1: [Fx, Fy, Fz, Mx, My, Mz],
-        2: [Fx, Fy, Fz, Mx, My, Mz],
-        ...
-    }
+    Rules
+    -----
+    1. F_global is a 1D array with length = 6 * number_of_nodes.
+    2. Each node has 6 DOFs in the following order:
+       [Fx, Fy, Fz, Mx, My, Mz]
+    3. If a node is not listed in NDLD, its load entries remain zero.
+    4. If a node appears in NDLD but is not defined in NODE, raise an error.
 
     Parameters
     ----------
     json_file : str
         Path to the JSON file.
+    node_key : str
+        Top-level key for node data.
     load_key : str
-        Top-level key storing the nodal load data.
+        Top-level key for nodal load data.
 
     Returns
     -------
-    dict
-        Dictionary whose keys are node IDs (int),
-        and whose values are lists of 6 numbers:
-        [Fx, Fy, Fz, Mx, My, Mz]
+    np.ndarray
+        1D global load vector with shape (6 * n_nodes, ).
     """
+
     with open(json_file, "r", encoding="utf-8") as f:
         data = json.load(f)
 
+    if node_key not in data:
+        raise KeyError(f"Key '{node_key}' not found in the JSON file.")
     if load_key not in data:
         raise KeyError(f"Key '{load_key}' not found in the JSON file.")
 
+    nodes_data = data[node_key]
     raw_nodal_loads = data[load_key]
-    nodal_loads = {}
+
+    n_nodes = len(nodes_data)
+
+    # Initialize the global nodal load vector
+    F_global = np.zeros(6 * n_nodes, dtype=float)
+
+    # Local load order for each node
+    load_map = {
+        "Fx": 0,
+        "Fy": 1,
+        "Fz": 2,
+        "Mx": 3,
+        "My": 4,
+        "Mz": 5,
+    }
 
     for node_id_str, load_data in raw_nodal_loads.items():
         node_id = int(node_id_str)
 
-        fx = load_data.get("Fx", 0.0)
-        fy = load_data.get("Fy", 0.0)
-        fz = load_data.get("Fz", 0.0)
-        mx = load_data.get("Mx", 0.0)
-        my = load_data.get("My", 0.0)
-        mz = load_data.get("Mz", 0.0)
+        # Check whether the node exists in NODE
+        if node_id_str not in nodes_data:
+            raise ValueError(
+                f"Node {node_id} in '{load_key}' is not defined in '{node_key}'."
+            )
 
-        nodal_loads[node_id] = [fx, fy, fz, mx, my, mz]
+        for load_name, local_idx in load_map.items():
+            val = float(load_data.get(load_name, 0.0))
+            global_idx = 6 * (node_id - 1) + local_idx
+            F_global[global_idx] += val
 
-    return nodal_loads
+    return F_global
 
 
 def read_element_loads(json_file, load_key="MBLD"):
@@ -375,6 +397,95 @@ def read_element_loads(json_file, load_key="MBLD"):
         ]
 
     return element_loads
+
+
+def read_support_disp(json_file, node_key="NODE", cons_key="CONS", spmv_key="SPMV"):
+    """
+    Read support prescribed movements (SPMV) from a JSON file and assemble
+    the global displacement vector u_global.
+
+    Rules
+    -----
+    1. u_global is a 1D array with length = 6 * number_of_nodes.
+    2. Each node has 6 DOFs in the following order:
+       [ux, uy, uz, rx, ry, rz]
+    3. A node appearing in SPMV must also appear in CONS to be effective.
+       Otherwise, its prescribed movements are ignored and remain zero.
+    4. A prescribed movement is only added if the corresponding DOF is
+       constrained in CONS (flag = 1). Otherwise, it remains zero.
+    5. Node IDs must be consecutive integers: 1, 2, ..., n_nodes.
+
+    Parameters
+    ----------
+    json_file : str
+        Path to the JSON file.
+    node_key : str
+        Top-level key for node data.
+    cons_key : str
+        Top-level key for constraint data.
+    spmv_key : str
+        Top-level key for support prescribed movement data.
+
+    Returns
+    -------
+    u_global : np.ndarray
+        1D global displacement vector with shape (6 * n_nodes, ).
+    """
+
+    with open(json_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    if node_key not in data:
+        raise KeyError(f"Key '{node_key}' not found in the JSON file.")
+    if cons_key not in data:
+        raise KeyError(f"Key '{cons_key}' not found in the JSON file.")
+
+    nodes_data = data[node_key]
+    cons_data = data[cons_key]
+    spmv_data = data.get(spmv_key, {})
+
+    node_ids = sorted(int(k) for k in nodes_data.keys())
+    n_nodes = len(node_ids)
+
+    # Check whether node IDs are consecutive: 1, 2, ..., n_nodes
+    expected_node_ids = list(range(1, n_nodes + 1))
+    if node_ids != expected_node_ids:
+        raise ValueError(
+            f"Node IDs must be consecutive integers from 1 to {n_nodes}. "
+            f"Got {node_ids}."
+        )
+
+    # Initialize the global prescribed displacement vector
+    u_global = np.zeros(6 * n_nodes, dtype=float)
+
+    # Local DOF order for each node
+    dof_map = {
+        "ux": ("Ux", 0),
+        "uy": ("Uy", 1),
+        "uz": ("Uz", 2),
+        "rx": ("Rx", 3),
+        "ry": ("Ry", 4),
+        "rz": ("Rz", 5),
+    }
+
+    for node_id_str, spmv_node in spmv_data.items():
+        node_id = int(node_id_str)
+
+        # Ignore nodes that are not listed in CONS
+        if node_id_str not in cons_data:
+            continue
+
+        cons_node = cons_data[node_id_str]
+
+        for spmv_dof, (cons_dof, local_idx) in dof_map.items():
+            val = float(spmv_node.get(spmv_dof, 0.0))
+
+            # Only add the prescribed movement if the DOF is constrained
+            if cons_node.get(cons_dof, 0) == 1:
+                global_idx = 6 * (node_id - 1) + local_idx
+                u_global[global_idx] += val
+
+    return u_global
 
 
 def read_temperature_loads(json_file, tpld_key="TPLD"):
