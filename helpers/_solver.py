@@ -8,19 +8,13 @@ import numpy as np
 
 def truss_solver(filepath):
     """
-    Solve the truss model using the 3D-frame-format pipeline and return a rich result dict.
+    A simple solver for truss structures. It assembles the global stiffness matrix,
+    applies boundary conditions, and solves for displacements.
 
-    Why return a dict instead of only three arrays?
-    -----------------------------------------------
-    Because postprocess usually needs more than only K_global and u_global:
-    - reactions
-    - full nodal force vector
-    - element transformation matrices
-    - local stiffness matrices
-    - equivalent nodal load vectors (Qf/Qh/Qe/Qt)
-    - dof maps and support dofs
-
-    Returning them once from solver avoids recomputing or guessing later.
+    Parameters
+    ----------
+    filepath : str
+        Path to the JSON file containing the structural data.
     """
 
     nodes = interfaces.read_nodes(filepath)
@@ -44,31 +38,26 @@ def truss_solver(filepath):
     element_paras = element.build_elements_para(nodes, elements, materials, sections)
 
     for e_id in elements:
-        i_node = elements[e_id][3][0]
-        j_node = elements[e_id][3][1]
-
         L, etype, E, G, A, Iy, Iz, J, mt, alpha = element_paras[e_id]
         kl = element.element_kl(E, G, A, Iy, Iz, J, L)
-
         gamma = element.build_gamma_3d(
-            nodes[i_node],
-            nodes[j_node],
+            nodes[elements[e_id][3][0]],
+            nodes[elements[e_id][3][1]],
             psi=0.0,
             angle_unit="deg",
         )
         T = element.frame_transformation_matrix(gamma)
-
         Qf = preprocess.fef_cal(element_loads.get(e_id), L, angle_unit="deg")
         Qh = preprocess.heat_cal(temperature_loads.get(e_id), E, A, alpha)
         Qe = preprocess.fabrication_error_cal(fabrication_loads.get(e_id), E, A, L)
-        m = element.element_dof_map_1based(i_node, j_node)
+        m = element.element_dof_map_1based(elements[e_id][3][0], elements[e_id][3][1])
 
-        k_list.append(np.asarray(kl, dtype=float))
-        T_list.append(np.asarray(T, dtype=float))
-        Qf_list.append(np.asarray(Qf, dtype=float))
-        Qh_list.append(np.asarray(Qh, dtype=float))
-        Qe_list.append(np.asarray(Qe, dtype=float))
-        map_list.append(np.asarray(m, dtype=int))
+        k_list.append(kl)
+        T_list.append(T)
+        Qf_list.append(Qf)
+        Qh_list.append(Qh)
+        Qe_list.append(Qe)
+        map_list.append(m)
 
     Qt_list = [x + y + z for x, y, z in zip(Qf_list, Qh_list, Qe_list)]
 
@@ -116,44 +105,4 @@ def truss_solver(filepath):
         f_f, F_r, free_dofs, restrained_dofs
     )
 
-    return {
-        "filepath": filepath,
-        "nodes": nodes,
-        "elements": elements,
-        "constraints": constraints,
-        "materials": materials,
-        "sections": sections,
-        "F_global": F_global,
-        "u_support": u_support,
-        "element_loads": element_loads,
-        "temperature_loads": temperature_loads,
-        "fabrication_loads": fabrication_loads,
-        "element_paras": element_paras,
-        "k_list": k_list,
-        "T_list": T_list,
-        "Qf_list": Qf_list,
-        "Qh_list": Qh_list,
-        "Qe_list": Qe_list,
-        "Qt_list": Qt_list,
-        "map_list": map_list,
-        "ndof": ndof,
-        "dof_restrained_1based": dof_restrained_1based,
-        "K_global": K_global,
-        "F_fef_global": F_fef_global,
-        "K_ff": K_ff,
-        "K_fr": K_fr,
-        "K_rf": K_rf,
-        "K_rr": K_rr,
-        "f_f": f_f,
-        "f_r": f_r,
-        "u_r": u_r,
-        "f_fef_f": f_fef_f,
-        "f_fef_r": f_fef_r,
-        "free_dofs": free_dofs,
-        "restrained_dofs": restrained_dofs,
-        "rhs": rhs,
-        "u_f": u_f,
-        "F_r": F_r,
-        "u_global": u_global,
-        "f_global_complete": f_global_complete,
-    }
+    return K_global, u_global, f_global_complete
