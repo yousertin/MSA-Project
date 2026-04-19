@@ -322,43 +322,73 @@ def fef_cal_global(elem_load_global, T, L, angle_unit="deg", tol=1e-12):
     return fef_local
 
 
-def release_dof(dof, k_mod, Qf_mod, Qh_mod, Qe_mod):
+def _static_condense_release(k, q, released_dofs):
     """
-    Helper function to apply moment release conditions by modifying the local
-    stiffness matrix and the corresponding local load vectors.
+    Apply end release by static condensation for one local load vector.
 
     Parameters
     ----------
-    dof : int
-        Local DOF index to be released (0-based).
-    k_mod : np.ndarray
+    k : np.ndarray
         12x12 local stiffness matrix.
-    Qf_mod : list
-        12-component local fixed-end force vector.
-    Qh_mod : list
-        12-component local temperature load vector.
-    Qe_mod : list
-        12-component local fabrication load vector.
+    q : array_like
+        12-component local load vector.
+    released_dofs : list[int]
+        Released local DOF indices (0-based).
 
     Returns
     -------
-    tuple
-        Modified (k_mod, Qf_mod, Qh_mod, Qe_mod).
+    k_out : np.ndarray
+        12x12 released local stiffness matrix.
+    q_out : list
+        12-component released local load vector.
     """
-    k_mod[dof, :] = 0.0
-    k_mod[:, dof] = 0.0
+    k = np.asarray(k, dtype=float)
+    q = np.asarray(q, dtype=float)
 
-    Qf_mod[dof] = 0.0
-    Qh_mod[dof] = 0.0
-    Qe_mod[dof] = 0.0
+    if k.shape != (12, 12):
+        raise ValueError("k must be a 12x12 matrix for a 3D frame element.")
 
-    return k_mod, Qf_mod, Qh_mod, Qe_mod
+    if q.shape != (12,):
+        raise ValueError("q must be a 12-component vector for a 3D frame element.")
+
+    if not released_dofs:
+        return k.copy(), q.tolist()
+
+    all_dofs = list(range(12))
+    kept_dofs = [d for d in all_dofs if d not in released_dofs]
+
+    Kaa = k[np.ix_(kept_dofs, kept_dofs)]
+    Kab = k[np.ix_(kept_dofs, released_dofs)]
+    Kba = k[np.ix_(released_dofs, kept_dofs)]
+    Kbb = k[np.ix_(released_dofs, released_dofs)]
+
+    qa = q[kept_dofs]
+    qb = q[released_dofs]
+
+    if np.linalg.matrix_rank(Kbb) < len(released_dofs):
+        raise ValueError(
+            "Released DOF submatrix Kbb is singular. "
+            "Check element stiffness or release definition."
+        )
+
+    Kbb_inv_Kba = np.linalg.solve(Kbb, Kba)
+    Kbb_inv_qb = np.linalg.solve(Kbb, qb)
+
+    Kaa_rel = Kaa - Kab @ Kbb_inv_Kba
+    qa_rel = qa - Kab @ Kbb_inv_qb
+
+    k_out = np.zeros((12, 12), dtype=float)
+    q_out = np.zeros(12, dtype=float)
+
+    k_out[np.ix_(kept_dofs, kept_dofs)] = Kaa_rel
+    q_out[kept_dofs] = qa_rel
+
+    return k_out, q_out.tolist()
 
 
 def moment_release(MT, k, Qf, Qh, Qe):
     """
-    Apply 3D moment release conditions to the local element stiffness matrix
-    and the corresponding local load vectors.
+    Apply 3D spherical end release conditions by static condensation.
 
     Local DOF order
     ---------------
@@ -373,72 +403,120 @@ def moment_release(MT, k, Qf, Qh, Qe):
     2 : release j-end
     3 : release both ends
 
-    Parameters
-    ----------
-    MT : int
-        Moment release code.
-    k : np.ndarray
-        12x12 local element stiffness matrix.
-    Qf : list
-        12-component local fixed-end force vector.
-    Qh : list
-        12-component local load vector caused by temperature loads.
-    Qe : list
-        12-component local load vector caused by fabrication loads.
-
-    Returns
-    -------
-    k_mod : np.ndarray
-        Modified local stiffness matrix.
-    Qf_mod : list
-        Modified local fixed-end force vector.
-    Qh_mod : list
-        Modified local temperature load vector.
-    Qe_mod : list
-        Modified local fabrication load vector.
+    Notes
+    -----
+    Here "release" means spherical hinge release, so all three rotational DOFs
+    at the released end are released:
+    - i-end : [3, 4, 5]
+    - j-end : [9, 10, 11]
     """
-    k_mod = k.copy()
-    Qf_mod = list(Qf)
-    Qh_mod = list(Qh)
-    Qe_mod = list(Qe)
+    k = np.asarray(k, dtype=float)
+    Qf = np.asarray(Qf, dtype=float)
+    Qh = np.asarray(Qh, dtype=float)
+    Qe = np.asarray(Qe, dtype=float)
 
-    if k_mod.shape != (12, 12):
+    if k.shape != (12, 12):
         raise ValueError("k must be a 12x12 matrix for a 3D frame element.")
 
-    if len(Qf_mod) != 12:
-        raise ValueError("Qf must be a 12-component list for a 3D frame element.")
-
-    if len(Qh_mod) != 12:
-        raise ValueError("Qh must be a 12-component list for a 3D frame element.")
-
-    if len(Qe_mod) != 12:
-        raise ValueError("Qe must be a 12-component list for a 3D frame element.")
+    if Qf.shape != (12,) or Qh.shape != (12,) or Qe.shape != (12,):
+        raise ValueError("Qf, Qh, and Qe must all be 12-component vectors.")
 
     if MT == 0:
-        pass
+        released_dofs = []
 
     elif MT == 1:
-        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(3, k_mod, Qf_mod, Qh_mod, Qe_mod)
-        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(4, k_mod, Qf_mod, Qh_mod, Qe_mod)
-        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(5, k_mod, Qf_mod, Qh_mod, Qe_mod)
+        released_dofs = [3, 4, 5]
 
     elif MT == 2:
-        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(9, k_mod, Qf_mod, Qh_mod, Qe_mod)
-        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(10, k_mod, Qf_mod, Qh_mod, Qe_mod)
-        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(11, k_mod, Qf_mod, Qh_mod, Qe_mod)
+        released_dofs = [9, 10, 11]
 
     elif MT == 3:
-        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(3, k_mod, Qf_mod, Qh_mod, Qe_mod)
-        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(4, k_mod, Qf_mod, Qh_mod, Qe_mod)
-        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(5, k_mod, Qf_mod, Qh_mod, Qe_mod)
-        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(9, k_mod, Qf_mod, Qh_mod, Qe_mod)
-        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(10, k_mod, Qf_mod, Qh_mod, Qe_mod)
-        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(11, k_mod, Qf_mod, Qh_mod, Qe_mod)
+        released_dofs = [3, 4, 5, 9, 10, 11]
 
     else:
         raise ValueError("MT can only take the values 0, 1, 2, or 3.")
 
+    if not released_dofs:
+        return k.copy(), Qf.tolist(), Qh.tolist(), Qe.tolist()
+
+    k_mod, Qf_mod = _static_condense_release(k, Qf, released_dofs)
+    _, Qh_mod = _static_condense_release(k, Qh, released_dofs)
+    _, Qe_mod = _static_condense_release(k, Qe, released_dofs)
+
     return k_mod, Qf_mod, Qh_mod, Qe_mod
+
+
+def _is_released_at_node(i_node, j_node, MT, node_id):
+    """
+    Check whether the element end at node_id is released.
+    """
+    if node_id == i_node:
+        return MT in (1, 3)
+
+    if node_id == j_node:
+        return MT in (2, 3)
+
+    return False
+
+
+def find_fully_released_nodes(elements, element_paras):
+    """
+    Find nodes whose every connected element end is released.
+
+    Parameters
+    ----------
+    elements : dict
+        Element data read from json.
+    element_paras : dict
+        Element parameter dictionary returned by build_elements_para().
+
+    Returns
+    -------
+    np.ndarray
+        Sorted node IDs (int) whose all connected member ends are released.
+    """
+    node_release_flags = {}
+
+    for e_id in elements:
+        i_node = elements[e_id][3][0]
+        j_node = elements[e_id][3][1]
+        MT = int(element_paras[e_id][8])
+
+        node_release_flags.setdefault(i_node, []).append(
+            _is_released_at_node(i_node, j_node, MT, i_node)
+        )
+        node_release_flags.setdefault(j_node, []).append(
+            _is_released_at_node(i_node, j_node, MT, j_node)
+        )
+
+    fully_released_nodes = [
+        node_id for node_id, flags in node_release_flags.items() if flags and all(flags)
+    ]
+
+    return np.array(sorted(fully_released_nodes), dtype=int)
+
+
+def rotational_dofs_1based(node_id):
+    """
+    Return [Rx, Ry, Rz] DOFs for a 3D frame node in 1-based numbering.
+    """
+    base = 6 * (node_id - 1)
+    return np.array([base + 4, base + 5, base + 6], dtype=int)
+
+
+def fictitious_rotational_dofs_1based(fully_released_nodes):
+    """
+    Convert fully released node IDs into fictitious rotational DOFs.
+    """
+    dofs = []
+
+    for node_id in fully_released_nodes:
+        dofs.extend(rotational_dofs_1based(node_id))
+
+    if not dofs:
+        return np.array([], dtype=int)
+
+    return np.array(sorted(dofs), dtype=int)
 
 
 def heat_cal(temp, E, A, alpha):

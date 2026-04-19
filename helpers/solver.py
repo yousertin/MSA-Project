@@ -234,10 +234,14 @@ def frame_solver(filepath):
     dof_restrained_1based = element.restrained_dofs_1based(
         constraints, element.node_dofs_1based
     )
-    dof_fictitious_1based = np.array([], dtype=int)
+
+    fully_released_nodes = preprocess.find_fully_released_nodes(elements, element_paras)
+    dof_fictitious_1based = preprocess.fictitious_rotational_dofs_1based(
+        fully_released_nodes
+    )
 
     dof_restrained_1based = np.sort(
-        np.concatenate((dof_restrained_1based, dof_fictitious_1based))
+        np.unique(np.concatenate((dof_restrained_1based, dof_fictitious_1based)))
     )
 
     K_global, F_fef_global = assembly.assemble_global_stiffness_and_fef(
@@ -264,6 +268,9 @@ def frame_solver(filepath):
     u_f = np.linalg.solve(K_ff, rhs)
 
     F_r = K_rf @ u_f + K_rr @ u_r + f_fef_r
+
+    fictitious_mask = np.isin(restrained_dofs, dof_fictitious_1based)
+    F_r[fictitious_mask] = 0.0
 
     u_global = assembly.assemble_global_displacements(
         u_f, u_r, free_dofs, restrained_dofs
@@ -294,6 +301,8 @@ def frame_solver(filepath):
         "Qt_list": Qt_list,
         "map_list": map_list,
         "ndof": ndof,
+        "fully_released_nodes": fully_released_nodes,
+        "dof_fictitious_1based": dof_fictitious_1based,
         "dof_restrained_1based": dof_restrained_1based,
         "K_global": K_global,
         "F_fef_global": F_fef_global,

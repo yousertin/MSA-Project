@@ -330,24 +330,17 @@ Apply a downward force of `100 kN` at node 2:
 
 ### 9. MBLD
 
-The `MBLD` block defines member loads.
+The `MBLD` block defines member loads in the **global coordinate system**.
 
 ```json
 "MBLD": {
     "1": {
-        "Tx": 0.0,
-        "TLOCATION": 0.0,
-        "qy": 0.0,
-        "qyANGLE": 0.0,
-        "qz": 0.0,
-        "qzANGLE": 0.0,
-        "Py": 0.0,
-        "PyLOCATION": 0.0,
-        "PyANGLE": 0.0,
-        "Pz": 0.0,
-        "PzLOCATION": 0.0,
-        "PzANGLE": 0.0
-  }
+        "q_global": [0.0, 0.0, 0.0],
+        "P_global": [0.0, 0.0, 0.0],
+        "P_loc": 0.0,
+        "M_global": [0.0, 0.0, 0.0],
+        "M_loc": 0.0
+    }
 }
 ```
 
@@ -355,43 +348,55 @@ Here the key corresponds to the element ID.
 
 #### Fields
 
-- `Tx`: torque magnitude in the plane associated with the local x-axis
-- `TLOCATION`: relative location of the concentrated torque along the member (x / L) in the direction associated with the local x-axis
-- `qy`: distributed load magnitude in the plane associated with the local y-axis
-- `qyANGLE`: distributed load direction angle in the plane associated with the local y-axis
-- `qz`: distributed load magnitude in the plane associated with the local z-axis
-- `qzANGLE`: distributed load direction angle in the plane associated with the local z-axis
-- `Py`: concentrated load magnitude in the plane associated with the local y-axis
-- `PyLOCATION`: relative location of the concentrated load along the member (x / L) in the plane associated with the local y-axis
-- `PyANGLE`: concentrated load direction angle in the plane associated with the local y-axis
-- `Pz`: concentrated load magnitude in the plane associated with the local z-axis
-- `PzLOCATION`: relative location of the concentrated load along the member (x / L) in the plane associated with the local z-axis
-- `PzANGLE`: concentrated load direction angle in the plane associated with the local z-axis
-- **Angle definition**: angles follow the Cartesian convention in the corresponding local plane, i.e., 0° is along the positive local x-axis, 90° is along the positive local y-axis in the local x-y plane, and 90° is along the positive local z-axis in the local x-z plane.
+- `q_global`: full-span uniformly distributed load vector in global coordinates, given as `[qx, qy, qz]`
+- `P_global`: concentrated force vector in global coordinates, given as `[Px, Py, Pz]`
+- `P_loc`: relative location of the concentrated force along the member, in the range `[0, 1]`
+- `M_global`: concentrated moment vector in global coordinates, given as `[Mx, My, Mz]`
+- `M_loc`: relative location of the concentrated moment along the member, in the range `[0, 1]`
+
+#### Notes
+
+- All load vectors are defined in the **global Cartesian coordinate system**.
+- `q_global` is assumed to act over the **entire member length**.
+- `P_global` represents **one concentrated force** on the member.
+- `M_global` represents **one concentrated moment** on the member.
+- In the current implementation of `fef_cal_global`, the concentrated moment is only supported when its transformed local equivalent acts about the **local x-axis** only.
 
 #### Example
 
-Uniform distributed load on element 1:
+Uniform distributed load on element 1 in the negative global Z direction:
 
 ```json
 "1": {
-    "q": -20.0,
-    "qANGLE": 90.0,
-    "P": 0.0,
-    "PLOCATION": 0.0,
-    "PANGLE": 0.0
+    "q_global": [0.0, 0.0, -20.0],
+    "P_global": [0.0, 0.0, 0.0],
+    "P_loc": 0.0,
+    "M_global": [0.0, 0.0, 0.0],
+    "M_loc": 0.0
 }
 ```
 
-Point load on element 2 at midspan:
+Point load on element 2 at midspan in the negative global Y direction:
 
 ```json
 "2": {
-    "q": 0.0,
-    "qANGLE": 0.0,
-    "P": -50.0,
-    "PLOCATION": 0.5,
-    "PANGLE": 90.0
+    "q_global": [0.0, 0.0, 0.0],
+    "P_global": [0.0, -50.0, 0.0],
+    "P_loc": 0.5,
+    "M_global": [0.0, 0.0, 0.0],
+    "M_loc": 0.0
+}
+```
+
+Concentrated moment on element 3 at midspan:
+
+```json
+"3": {
+    "q_global": [0.0, 0.0, 0.0],
+    "P_global": [0.0, 0.0, 0.0],
+    "P_loc": 0.0,
+    "M_global": [10.0, 0.0, 0.0],
+    "M_loc": 0.5
 }
 ```
 
