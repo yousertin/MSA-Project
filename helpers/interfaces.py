@@ -328,14 +328,20 @@ def read_element_loads(json_file, load_key="MBLD"):
 
     Output format:
     {
-        1: [Tx, T_location,
-            qy, qyANGLE, qz, qzANGLE,
-            Py, PyLOCATION, PyANGLE,
-            Pz, PzLOCATION, PzANGLE],
-        2: [Tx, T_location,
-            qy, qyANGLE, qz, qzANGLE,
-            Py, PyLOCATION, PyANGLE,
-            Pz, PzLOCATION, PzANGLE],
+        1: {
+            "q_global": [qx, qy, qz],
+            "P_global": [Px, Py, Pz],
+            "P_loc": 0.0,
+            "M_global": [Mx, My, Mz],
+            "M_loc": 0.0
+        },
+        2: {
+            "q_global": [qx, qy, qz],
+            "P_global": [Px, Py, Pz],
+            "P_loc": 0.0,
+            "M_global": [Mx, My, Mz],
+            "M_loc": 0.0
+        },
         ...
     }
 
@@ -350,17 +356,23 @@ def read_element_loads(json_file, load_key="MBLD"):
     -------
     dict
         Dictionary whose keys are element IDs (int),
-        and whose values are lists of 12 numbers:
-        [Tx, T_location,
-        qy, qyANGLE, qz, qzANGLE,
-        Py, PyLOCATION, PyANGLE,
-        Pz, PzLOCATION, PzANGLE]
+        and whose values are dictionaries:
+        {
+            "q_global": [qx, qy, qz],
+            "P_global": [Px, Py, Pz],
+            "P_loc": 0.0,
+            "M_global": [Mx, My, Mz],
+            "M_loc": 0.0
+        }
+
+        If load_key does not exist in the JSON file,
+        return an empty dictionary.
     """
     with open(json_file, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     if load_key not in data:
-        raise KeyError(f"Key '{load_key}' not found in the JSON file.")
+        return {}
 
     raw_elem_loads = data[load_key]
     element_loads = {}
@@ -368,33 +380,31 @@ def read_element_loads(json_file, load_key="MBLD"):
     for elem_id_str, load_data in raw_elem_loads.items():
         elem_id = int(elem_id_str)
 
-        Tx = load_data.get("Tx", 0.0)
-        T_location = load_data.get("TLOCATION", 0.0)
-        qy = load_data.get("qy", 0.0)
-        qy_angle = load_data.get("qyANGLE", 0.0)
-        qz = load_data.get("qz", 0.0)
-        qz_angle = load_data.get("qzANGLE", 0.0)
-        py = load_data.get("P", 0.0)
-        py_location = load_data.get("PLOCATION", 0.0)
-        py_angle = load_data.get("PANGLE", 0.0)
-        pz = load_data.get("P", 0.0)
-        pz_location = load_data.get("PLOCATION", 0.0)
-        pz_angle = load_data.get("PANGLE", 0.0)
+        q_global = load_data.get("q_global", [0.0, 0.0, 0.0])
+        P_global = load_data.get("P_global", [0.0, 0.0, 0.0])
+        P_loc = load_data.get("P_loc", 0.0)
+        M_global = load_data.get("M_global", [0.0, 0.0, 0.0])
+        M_loc = load_data.get("M_loc", 0.0)
 
-        element_loads[elem_id] = [
-            Tx,
-            T_location,
-            qy,
-            qy_angle,
-            qz,
-            qz_angle,
-            py,
-            py_location,
-            py_angle,
-            pz,
-            pz_location,
-            pz_angle,
-        ]
+        if len(q_global) != 3:
+            raise ValueError(f"Element {elem_id}: q_global must have 3 components.")
+        if len(P_global) != 3:
+            raise ValueError(f"Element {elem_id}: P_global must have 3 components.")
+        if len(M_global) != 3:
+            raise ValueError(f"Element {elem_id}: M_global must have 3 components.")
+
+        if not (0.0 <= P_loc <= 1.0):
+            raise ValueError(f"Element {elem_id}: P_loc must be in [0, 1].")
+        if not (0.0 <= M_loc <= 1.0):
+            raise ValueError(f"Element {elem_id}: M_loc must be in [0, 1].")
+
+        element_loads[elem_id] = {
+            "q_global": [float(x) for x in q_global],
+            "P_global": [float(x) for x in P_global],
+            "P_loc": float(P_loc),
+            "M_global": [float(x) for x in M_global],
+            "M_loc": float(M_loc),
+        }
 
     return element_loads
 

@@ -578,18 +578,23 @@
     },
     "MBLD": {
         "1": {
-            "Tx": 0.0,
-            "TLOCATION": 0.0,
-            "qy": 0.0,
-            "qyANGLE": 0.0,
-            "qz": 0.0,
-            "qzANGLE": 0.0,
-            "Py": 0.0,
-            "PyLOCATION": 0.0,
-            "PyANGLE": 0.0,
-            "Pz": 0.0,
-            "PzLOCATION": 0.0,
-            "PzANGLE": 0.0
+            "q_global": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "P_global": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "P_loc": 0.0,
+            "M_global": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "M_loc": 0.0
         }
     },
     "SPMV": {

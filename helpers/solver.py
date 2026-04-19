@@ -58,7 +58,8 @@ def truss_solver(filepath):
         )
         T = element.frame_transformation_matrix(gamma)
 
-        Qf = preprocess.fef_cal(element_loads.get(e_id), L, angle_unit="deg")
+        elem_load_global = element_loads.get(e_id)
+        Qf = preprocess.fef_cal_global(elem_load_global, T, L)
         Qh = preprocess.heat_cal(temperature_loads.get(e_id), E, A, alpha)
         Qe = preprocess.fabrication_error_cal(fabrication_loads.get(e_id), E, A, L)
         m = element.element_dof_map_1based(i_node, j_node)
@@ -211,7 +212,8 @@ def frame_solver(filepath):
         )
         T = element.frame_transformation_matrix(gamma)
 
-        Qf = preprocess.fef_cal(element_loads.get(e_id), L, angle_unit="deg")
+        elem_load_global = element_loads.get(e_id)
+        Qf = preprocess.fef_cal_global(elem_load_global, T, L)
         Qh = preprocess.heat_cal(temperature_loads.get(e_id), E, A, alpha)
         Qe = preprocess.fabrication_error_cal(fabrication_loads.get(e_id), E, A, L)
         m = element.element_dof_map_1based(i_node, j_node)

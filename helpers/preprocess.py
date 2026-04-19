@@ -159,6 +159,169 @@ def fef_cal(elem_load, L, angle_unit="deg"):
     return fef_local
 
 
+def fef_cal_global(elem_load_global, T, L, angle_unit="deg", tol=1e-12):
+    """
+    Calculate the local fixed-end force vector directly from member loads
+    given in the global coordinate system.
+
+    Parameters
+    ----------
+    elem_load_global : dict or None
+        Dictionary format:
+
+        {
+            "q_global": [qx, qy, qz],   # full-span uniform distributed load
+            "P_global": [Px, Py, Pz],   # one concentrated force
+            "P_loc": 0.0,               # relative location in [0, 1]
+            "M_global": [Mx, My, Mz],   # concentrated moment
+            "M_loc": 0.0                # relative location in [0, 1]
+        }
+
+        Any missing item is treated as zero.
+
+        Notes
+        -----
+        1. q_global is one full-span uniform distributed load vector.
+        2. P_global is one concentrated force entry.
+        3. M_global is only supported when its local equivalent has
+           moment about local x-axis only.
+
+    T : np.ndarray
+        12x12 transformation matrix defined by:
+        T = block_diag(gamma, gamma, gamma, gamma)
+
+        where gamma satisfies:
+        local_vector = gamma @ global_vector
+
+    L : float
+        Element length.
+
+    angle_unit : str
+        Kept for interface consistency. Not used in this function,
+        because global loads are given directly by Cartesian components.
+
+    tol : float
+        Tolerance for zero check.
+
+    Returns
+    -------
+    np.ndarray
+        Local fixed-end force vector:
+        [Fx_i, Fy_i, Fz_i, Mx_i, My_i, Mz_i,
+         Fx_j, Fy_j, Fz_j, Mx_j, My_j, Mz_j]
+    """
+    if elem_load_global is None:
+        return np.zeros(12, dtype=float)
+
+    if L <= 0.0:
+        raise ValueError("L must be positive.")
+
+    T = np.asarray(T, dtype=float)
+
+    if T.shape != (12, 12):
+        raise ValueError("T must be a 12x12 transformation matrix.")
+
+    gamma = T[0:3, 0:3]
+
+    q_global = np.asarray(
+        elem_load_global.get("q_global", [0.0, 0.0, 0.0]), dtype=float
+    )
+    P_global = np.asarray(
+        elem_load_global.get("P_global", [0.0, 0.0, 0.0]), dtype=float
+    )
+    M_global = np.asarray(
+        elem_load_global.get("M_global", [0.0, 0.0, 0.0]), dtype=float
+    )
+
+    if q_global.shape != (3,):
+        raise ValueError('"q_global" must have 3 components.')
+    if P_global.shape != (3,):
+        raise ValueError('"P_global" must have 3 components.')
+    if M_global.shape != (3,):
+        raise ValueError('"M_global" must have 3 components.')
+
+    P_loc = float(elem_load_global.get("P_loc", 0.0))
+    M_loc = float(elem_load_global.get("M_loc", 0.0))
+
+    if not (0.0 <= P_loc <= 1.0):
+        raise ValueError("P_loc must be in [0, 1].")
+    if not (0.0 <= M_loc <= 1.0):
+        raise ValueError("M_loc must be in [0, 1].")
+
+    # global -> local
+    q_local = gamma @ q_global
+    P_local = gamma @ P_global
+    M_local = gamma @ M_global
+
+    fef_local = np.zeros(12, dtype=float)
+
+    # ---------------------------------------------------------
+    # 1. Full-span uniform distributed load
+    # local components: [qx, qy, qz]
+    # ---------------------------------------------------------
+    qx, qy, qz = q_local
+
+    # axial distributed load
+    fef_local[0] += -qx * L / 2.0
+    fef_local[6] += -qx * L / 2.0
+
+    # transverse y component -> bending about local z
+    fef_local[1] += -qy * L / 2.0
+    fef_local[5] += -qy * L**2 / 12.0
+    fef_local[7] += -qy * L / 2.0
+    fef_local[11] += qy * L**2 / 12.0
+
+    # transverse z component -> bending about local y
+    fef_local[2] += -qz * L / 2.0
+    fef_local[4] += qz * L**2 / 12.0
+    fef_local[8] += -qz * L / 2.0
+    fef_local[10] += -qz * L**2 / 12.0
+
+    # ---------------------------------------------------------
+    # 2. One concentrated force
+    # local components: [Px, Py, Pz]
+    # ---------------------------------------------------------
+    a = P_loc * L
+    b = L - a
+
+    Px, Py, Pz = P_local
+
+    # axial component
+    fef_local[0] += -Px * b / L
+    fef_local[6] += -Px * a / L
+
+    # transverse y component -> bending about local z
+    fef_local[1] += -Py * b**2 * (3.0 * a + b) / L**3
+    fef_local[5] += -Py * a * b**2 / L**2
+    fef_local[7] += -Py * a**2 * (a + 3.0 * b) / L**3
+    fef_local[11] += Py * a**2 * b / L**2
+
+    # transverse z component -> bending about local y
+    fef_local[2] += -Pz * b**2 * (3.0 * a + b) / L**3
+    fef_local[4] += Pz * a * b**2 / L**2
+    fef_local[8] += -Pz * a**2 * (a + 3.0 * b) / L**3
+    fef_local[10] += -Pz * a**2 * b / L**2
+
+    # ---------------------------------------------------------
+    # 3. One concentrated moment
+    # only torsion about local x-axis is supported
+    # ---------------------------------------------------------
+    a = M_loc * L
+    b = L - a
+
+    Mx, My, Mz = M_local
+
+    if not np.isclose(My, 0.0, atol=tol) or not np.isclose(Mz, 0.0, atol=tol):
+        raise NotImplementedError(
+            "Only concentrated moment about local x-axis is supported."
+        )
+
+    fef_local[3] += -Mx * b / L
+    fef_local[9] += -Mx * a / L
+
+    return fef_local
+
+
 def release_dof(dof, k_mod, Qf_mod, Qh_mod, Qe_mod):
     """
     Helper function to apply moment release conditions by modifying the local

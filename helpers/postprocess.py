@@ -336,8 +336,10 @@ def _build_element_cache(filepath):
         T = element.frame_transformation_matrix(gamma)
         k_local = element.element_kl(E, G, A, Iy, Iz, J, L)
 
+        elem_load_global = element_loads.get(e_id)
+
         Qf = np.asarray(
-            preprocess.fef_cal(element_loads.get(e_id), L, angle_unit="deg"),
+            preprocess.fef_cal_global(elem_load_global, T, L, angle_unit="deg"),
             dtype=float,
         )
         Qh = np.asarray(
