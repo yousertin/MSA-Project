@@ -109,31 +109,23 @@ def _safe_excel_sheet_name(name, used_names=None):
     return sheet_name
 
 
-def _export_tables_to_excel(json_filepath, tables, xlsx_filepath=None):
+def _export_tables_to_excel(
+    json_filepath,
+    tables,
+    xlsx_filepath=None,
+    output_dir=Path("examples/validation_results"),
+):
     """
     Export multiple DataFrames into one Excel file, one sheet per table.
 
-    Parameters
-    ----------
-    json_filepath : str
-        Original json model path, used to auto-generate xlsx file name.
-    tables : list[tuple[str, pd.DataFrame]]
-        Example:
-        [
-            ("Node Displacements", df_node_disp),
-            ("Reaction Forces", df_reactions),
-        ]
-    xlsx_filepath : str or None
-        Output xlsx path. If None, auto-generate beside the json file.
-
-    Returns
-    -------
-    str
-        Path of the exported xlsx file.
+    If xlsx_filepath is None, export to:
+        examples/validation_results/<json_file_stem>.xlsx
     """
+    json_path = Path(json_filepath)
+
     if xlsx_filepath is None:
-        json_path = Path(json_filepath)
-        xlsx_filepath = json_path.with_name(f"{json_path.stem}_results.xlsx")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        xlsx_filepath = output_dir / f"{json_path.stem}.xlsx"
     else:
         xlsx_filepath = Path(xlsx_filepath)
 
