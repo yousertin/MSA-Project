@@ -11,3 +11,4 @@ dependencies:
   - pandas==2.3.3 # Data structures and tools for tabular and time-series data
   - ipykernel==7.1.0 # Jupyter kernel enabling notebooks and VS Code Interactive (#%%)
   - jupyterlab==4.5.1 # Modern Jupyter development environment (recommended UI)
+  - openpyxl==3.1.5

@@ -1,4 +1,6 @@
 import json
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -72,6 +74,85 @@ def _show_df(df, decimals=4):
     else:  # pragma: no cover
         print(df)
     return styler
+
+
+def _safe_excel_sheet_name(name, used_names=None):
+    """
+    Make a valid Excel sheet name:
+    - remove invalid characters: : \\ / ? * [ ]
+    - limit length to 31
+    - avoid duplicate names
+    """
+    if used_names is None:
+        used_names = set()
+
+    invalid_chars = [":", "\\", "/", "?", "*", "[", "]"]
+    sheet_name = str(name)
+
+    for ch in invalid_chars:
+        sheet_name = sheet_name.replace(ch, "_")
+
+    sheet_name = sheet_name.strip()
+    if not sheet_name:
+        sheet_name = "Sheet"
+
+    base_name = sheet_name[:31]
+    sheet_name = base_name
+
+    counter = 1
+    while sheet_name in used_names:
+        suffix = f"_{counter}"
+        sheet_name = base_name[: 31 - len(suffix)] + suffix
+        counter += 1
+
+    used_names.add(sheet_name)
+    return sheet_name
+
+
+def _export_tables_to_excel(json_filepath, tables, xlsx_filepath=None):
+    """
+    Export multiple DataFrames into one Excel file, one sheet per table.
+
+    Parameters
+    ----------
+    json_filepath : str
+        Original json model path, used to auto-generate xlsx file name.
+    tables : list[tuple[str, pd.DataFrame]]
+        Example:
+        [
+            ("Node Displacements", df_node_disp),
+            ("Reaction Forces", df_reactions),
+        ]
+    xlsx_filepath : str or None
+        Output xlsx path. If None, auto-generate beside the json file.
+
+    Returns
+    -------
+    str
+        Path of the exported xlsx file.
+    """
+    if xlsx_filepath is None:
+        json_path = Path(json_filepath)
+        xlsx_filepath = json_path.with_name(f"{json_path.stem}_results.xlsx")
+    else:
+        xlsx_filepath = Path(xlsx_filepath)
+
+    used_names = set()
+
+    with pd.ExcelWriter(xlsx_filepath, engine="openpyxl") as writer:
+        for title, df in tables:
+            sheet_name = _safe_excel_sheet_name(title, used_names=used_names)
+
+            if df is None or (df.empty and len(df.columns) == 0):
+                pd.DataFrame({"info": ["empty"]}).to_excel(
+                    writer,
+                    sheet_name=sheet_name,
+                    index=False,
+                )
+            else:
+                df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+    return str(xlsx_filepath)
 
 
 ### --------- Basic DOF helpers --------- ###
@@ -717,7 +798,9 @@ def plot_truss_deformation(nodes, elements, u_global, scale=None):
     u_global = np.asarray(u_global, dtype=float).reshape(-1)
 
     fig = go.Figure()
-    first = True
+
+    x0, y0, z0 = [], [], []
+    xd, yd, zd = [], [], []
 
     for e_id in sorted(elements.keys()):
         i_node, j_node = _parse_element_nodes(elements[e_id])
@@ -727,29 +810,35 @@ def plot_truss_deformation(nodes, elements, u_global, scale=None):
         ui = u_global[6 * (i_node - 1) : 6 * (i_node - 1) + 6]
         uj = u_global[6 * (j_node - 1) : 6 * (j_node - 1) + 6]
 
-        fig.add_trace(
-            go.Scatter3d(
-                x=[xi, xj],
-                y=[yi, yj],
-                z=[zi, zj],
-                mode="lines",
-                name="Original" if first else None,
-                showlegend=first,
-                line=dict(width=4),
-            )
+        x0 += [xi, xj, None]
+        y0 += [yi, yj, None]
+        z0 += [zi, zj, None]
+
+        xd += [xi + scale * ui[0], xj + scale * uj[0], None]
+        yd += [yi + scale * ui[1], yj + scale * uj[1], None]
+        zd += [zi + scale * ui[2], zj + scale * uj[2], None]
+
+    fig.add_trace(
+        go.Scatter3d(
+            x=x0,
+            y=y0,
+            z=z0,
+            mode="lines",
+            name="Original",
+            line=dict(width=4, color="blue"),
         )
-        fig.add_trace(
-            go.Scatter3d(
-                x=[xi + scale * ui[0], xj + scale * uj[0]],
-                y=[yi + scale * ui[1], yj + scale * uj[1]],
-                z=[zi + scale * ui[2], zj + scale * uj[2]],
-                mode="lines",
-                name="Deformed" if first else None,
-                showlegend=first,
-                line=dict(width=4),
-            )
+    )
+
+    fig.add_trace(
+        go.Scatter3d(
+            x=xd,
+            y=yd,
+            z=zd,
+            mode="lines",
+            name="Deformed",
+            line=dict(width=4, color="red"),
         )
-        first = False
+    )
 
     fig.update_layout(
         title=f"Original and Deformed Truss (scale = {scale:.3g})",
@@ -777,6 +866,7 @@ def truss_output(
     show_node_ids=True,
     show_member_ids=False,
     show=True,
+    table_output=None,
 ):
     """
     Integrated truss postprocess entry.
@@ -794,6 +884,10 @@ def truss_output(
         Load-arrow scale factor. Auto if None.
     show : bool
         If True, show figures and styled tables immediately.
+        When table_output == "xlsx", editor output is suppressed automatically.
+    table_output : str or None
+        - "xlsx": export all result tables into one Excel file only
+        - None or "None": do not export file, keep default editor output
 
     Returns
     -------
@@ -808,6 +902,7 @@ def truss_output(
             "df_member_full": ...,
             "member_results": ...,
             "units": ...,
+            "xlsx_path": ...,
         }
     """
     solver_result = _normalize_solver_result(solver_result)
@@ -835,7 +930,22 @@ def truss_output(
 
     fig_model = None
     fig_deformation = None
+    xlsx_path = None
 
+    if table_output not in (None, "None", "xlsx"):
+        raise ValueError("table_output must be 'xlsx', None, or 'None'.")
+
+    if table_output == "xlsx":
+        tables = [
+            ("Node Displacements", df_node_disp),
+            ("Maximum Displacement Summary", df_disp_summary),
+            ("Reaction Forces", df_reactions),
+            ("Member Summary", df_member_summary),
+            ("Member Full Results", df_member_full),
+        ]
+        xlsx_path = _export_tables_to_excel(filepath, tables)
+
+    # plot is still controlled by show
     if show:
         fig_model = plot_truss_model(
             nodes,
@@ -853,6 +963,10 @@ def truss_output(
             scale=deformation_scale,
         )
 
+    # tables are shown only when not exporting to xlsx
+    show_tables = show and (table_output not in ("xlsx",))
+
+    if show_tables:
         _show_df(df_node_disp, decimals=6)
         _show_df(df_disp_summary, decimals=6)
         if not df_reactions.empty:
@@ -870,4 +984,5 @@ def truss_output(
         "df_member_full": df_member_full,
         "member_results": member_results,
         "units": units,
+        "xlsx_path": xlsx_path,
     }
