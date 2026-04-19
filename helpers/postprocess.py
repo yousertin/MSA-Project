@@ -850,7 +850,7 @@ def plot_truss_deformation(nodes, elements, u_global, scale=None):
 ### --------- Main integrated output --------- ###
 
 
-def truss_output(
+def output(
     filepath,
     solver_result,
     deformation_scale=None,

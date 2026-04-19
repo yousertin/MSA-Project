@@ -159,22 +159,43 @@ def fef_cal(elem_load, L, angle_unit="deg"):
     return fef_local
 
 
-def release_dof(dof, k_mod, Q_mod):
+def release_dof(dof, k_mod, Qf_mod, Qh_mod, Qe_mod):
     """
-    Helper function to apply moment release conditions by modifying the local stiffness matrix
-    and the corresponding local load vector.
+    Helper function to apply moment release conditions by modifying the local
+    stiffness matrix and the corresponding local load vectors.
+
+    Parameters
+    ----------
+    dof : int
+        Local DOF index to be released (0-based).
+    k_mod : np.ndarray
+        12x12 local stiffness matrix.
+    Qf_mod : list
+        12-component local fixed-end force vector.
+    Qh_mod : list
+        12-component local temperature load vector.
+    Qe_mod : list
+        12-component local fabrication load vector.
+
+    Returns
+    -------
+    tuple
+        Modified (k_mod, Qf_mod, Qh_mod, Qe_mod).
     """
     k_mod[dof, :] = 0.0
     k_mod[:, dof] = 0.0
-    Q_mod[dof] = 0.0
 
-    return k_mod, Q_mod
+    Qf_mod[dof] = 0.0
+    Qh_mod[dof] = 0.0
+    Qe_mod[dof] = 0.0
+
+    return k_mod, Qf_mod, Qh_mod, Qe_mod
 
 
-def moment_release(MT, k, Q):
+def moment_release(MT, k, Qf, Qh, Qe):
     """
     Apply 3D moment release conditions to the local element stiffness matrix
-    and the corresponding local load vector.
+    and the corresponding local load vectors.
 
     Local DOF order
     ---------------
@@ -195,46 +216,66 @@ def moment_release(MT, k, Q):
         Moment release code.
     k : np.ndarray
         12x12 local element stiffness matrix.
-    Q : np.ndarray
-        12x1 local element load vector.
+    Qf : list
+        12-component local fixed-end force vector.
+    Qh : list
+        12-component local load vector caused by temperature loads.
+    Qe : list
+        12-component local load vector caused by fabrication loads.
 
     Returns
     -------
     k_mod : np.ndarray
         Modified local stiffness matrix.
-    Q_mod : np.ndarray
-        Modified local load vector.
+    Qf_mod : list
+        Modified local fixed-end force vector.
+    Qh_mod : list
+        Modified local temperature load vector.
+    Qe_mod : list
+        Modified local fabrication load vector.
     """
     k_mod = k.copy()
-    Q_mod = Q.copy()
+    Qf_mod = list(Qf)
+    Qh_mod = list(Qh)
+    Qe_mod = list(Qe)
 
     if k_mod.shape != (12, 12):
         raise ValueError("k must be a 12x12 matrix for a 3D frame element.")
 
-    if Q_mod.shape not in [(12,), (12, 1)]:
-        raise ValueError("Q must be a 12-component vector for a 3D frame element.")
+    if len(Qf_mod) != 12:
+        raise ValueError("Qf must be a 12-component list for a 3D frame element.")
+
+    if len(Qh_mod) != 12:
+        raise ValueError("Qh must be a 12-component list for a 3D frame element.")
+
+    if len(Qe_mod) != 12:
+        raise ValueError("Qe must be a 12-component list for a 3D frame element.")
 
     if MT == 0:
         pass
+
     elif MT == 1:
-        release_dof(3, k_mod, Q_mod)
-        release_dof(4, k_mod, Q_mod)
-        release_dof(5, k_mod, Q_mod)
+        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(3, k_mod, Qf_mod, Qh_mod, Qe_mod)
+        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(4, k_mod, Qf_mod, Qh_mod, Qe_mod)
+        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(5, k_mod, Qf_mod, Qh_mod, Qe_mod)
+
     elif MT == 2:
-        release_dof(9, k_mod, Q_mod)
-        release_dof(10, k_mod, Q_mod)
-        release_dof(11, k_mod, Q_mod)
+        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(9, k_mod, Qf_mod, Qh_mod, Qe_mod)
+        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(10, k_mod, Qf_mod, Qh_mod, Qe_mod)
+        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(11, k_mod, Qf_mod, Qh_mod, Qe_mod)
+
     elif MT == 3:
-        release_dof(3, k_mod, Q_mod)
-        release_dof(4, k_mod, Q_mod)
-        release_dof(5, k_mod, Q_mod)
-        release_dof(9, k_mod, Q_mod)
-        release_dof(10, k_mod, Q_mod)
-        release_dof(11, k_mod, Q_mod)
+        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(3, k_mod, Qf_mod, Qh_mod, Qe_mod)
+        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(4, k_mod, Qf_mod, Qh_mod, Qe_mod)
+        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(5, k_mod, Qf_mod, Qh_mod, Qe_mod)
+        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(9, k_mod, Qf_mod, Qh_mod, Qe_mod)
+        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(10, k_mod, Qf_mod, Qh_mod, Qe_mod)
+        k_mod, Qf_mod, Qh_mod, Qe_mod = release_dof(11, k_mod, Qf_mod, Qh_mod, Qe_mod)
+
     else:
         raise ValueError("MT can only take the values 0, 1, 2, or 3.")
 
-    return k_mod, Q_mod
+    return k_mod, Qf_mod, Qh_mod, Qe_mod
 
 
 def heat_cal(temp, E, A, alpha):
