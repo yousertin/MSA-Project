@@ -1,6 +1,41 @@
 import numpy as np
 
 
+def all_nodes_rotational_dofs_1based(nodes):
+    """
+    Return all rotational DOFs [Rx, Ry, Rz] for all nodes in 1-based numbering.
+    Suitable for a pure truss model stored in a 6-DOF-per-node framework.
+    """
+    dofs = []
+
+    for node_id in sorted(nodes):
+        base = 6 * (node_id - 1)
+        dofs.extend([base + 4, base + 5, base + 6])
+
+    return np.array(dofs, dtype=int)
+
+
+def zero_stiffness_dofs_1based(K_global, candidate_dofs_1based, tol=1e-12):
+    """
+    From candidate DOFs, keep only those whose row and column in K_global
+    are both numerically zero.
+    """
+    K_global = np.asarray(K_global, dtype=float)
+    candidate_dofs_1based = np.asarray(candidate_dofs_1based, dtype=int)
+
+    zero_dofs = []
+
+    for dof in candidate_dofs_1based:
+        idx = dof - 1
+        row_zero = np.all(np.abs(K_global[idx, :]) <= tol)
+        col_zero = np.all(np.abs(K_global[:, idx]) <= tol)
+
+        if row_zero and col_zero:
+            zero_dofs.append(dof)
+
+    return np.array(sorted(zero_dofs), dtype=int)
+
+
 def fef_cal(elem_load, L, angle_unit="deg"):
     """
     Calculate the local fixed-end force vector for one element load entry.

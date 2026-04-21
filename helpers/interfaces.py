@@ -54,7 +54,7 @@ def read_elements(json_file, elem_key="ELEM"):
 
     Output format:
     {
-        1: ["B", 1, 1, [1, 2], 0],
+        1: ["F", 1, 1, [1, 2], 0],
         2: ["T", 2, 1, [2, 3], 1],
         ...
     }
@@ -66,7 +66,6 @@ def read_elements(json_file, elem_key="ELEM"):
     -----
     - TYPE is converted to its first capital letter:
       "TRUSS" -> "T"
-      "BEAM"  -> "B"
       "FRAME" -> "F"
 
     Parameters

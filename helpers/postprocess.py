@@ -113,7 +113,7 @@ def _export_tables_to_excel(
     json_filepath,
     tables,
     xlsx_filepath=None,
-    output_dir=Path("examples/validation_results"),
+    output_dir=Path("outputs/"),
 ):
     """
     Export multiple DataFrames into one Excel file, one sheet per table.
@@ -708,7 +708,7 @@ def cubic_shape_functions(x, L):
     H1 = 1.0 - 3.0 * xi**2 + 2.0 * xi**3
     H2 = L * (xi - 2.0 * xi**2 + xi**3)
     H3 = 3.0 * xi**2 - 2.0 * xi**3
-    H4 = L * (-xi**2 + xi**3)
+    H4 = L * (-(xi**2) + xi**3)
 
     return H1, H2, H3, H4
 
