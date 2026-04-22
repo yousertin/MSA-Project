@@ -1089,7 +1089,7 @@ This file includes multiple load effects in one model:
 - A uniformly distributed member load of `q_global = [0.0, 0.0, -120.0]` kN/m is applied to selected elements
 - Nonuniform support displacements are assigned at selected support nodes
 - The imposed support movement includes different values of $u_x$, $u_y$, and $u_z$
-- No temperature load is applied in this case
+- A uniform temperature load `TEMP = 50.0` is applied in this case
 
 This file is intended to represent a more realistic comprehensive loading condition of the final bridge model, in which distributed live load effects and support movement are considered simultaneously.
 
