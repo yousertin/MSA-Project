@@ -1,4 +1,4 @@
-name: test
+name: MSA_test
 channels:
   - conda-forge
   - defaults
