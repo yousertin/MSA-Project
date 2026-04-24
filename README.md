@@ -551,9 +551,9 @@ pp = postprocess.frame_output(
 For a model containing both **TRUSS** and **FRAME** elements:
 
 - Use the solver with the prefix `hybrid`
-- Use the postprocessor with the prefix `frame`
+- Use the postprocessor with the prefix `hybrid`
 
-This is because the hybrid model is solved by the hybrid solver, while the result output is handled using the frame-style postprocessor.
+This is because the hybrid model is solved by the hybrid solver, while the result output is handled using the hybrid postprocessor.
 
 Example:
 
@@ -561,7 +561,7 @@ Example:
 filepath = 'inputs/final_structure_xxxx.json'
 
 result = solver.hybrid_solver(filepath)
-pp = postprocess.frame_output(
+pp = postprocess.hybrid_output(
     filepath,
     solver_result,
     deformation_scale=None,

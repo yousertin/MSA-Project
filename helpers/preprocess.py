@@ -36,6 +36,28 @@ def zero_stiffness_dofs_1based(K_global, candidate_dofs_1based, tol=1e-12):
     return np.array(sorted(zero_dofs), dtype=int)
 
 
+def zero_stiffness_rotational_dofs_1based(K_global, nodes, tol=1e-12):
+    """
+    Find rotational DOFs with zero global stiffness.
+
+    This function is used to create fictitious restraints for:
+    1. 12-DOF truss elements, whose rotational DOFs have no stiffness.
+    2. Frame models where moment releases leave some rotational DOFs
+       with no remaining stiffness.
+    3. Mixed truss-frame models.
+
+    The fictitious restraints are only numerical constraints. They prevent
+    zero-stiffness rotational DOFs from entering K_ff.
+    """
+    candidate_rot_dofs = all_nodes_rotational_dofs_1based(nodes)
+
+    return zero_stiffness_dofs_1based(
+        K_global,
+        candidate_rot_dofs,
+        tol=tol,
+    )
+
+
 def fef_cal(elem_load, L, angle_unit="deg"):
     """
     Calculate the local fixed-end force vector for one element load entry.
@@ -479,79 +501,6 @@ def moment_release(MT, k, Qf, Qh, Qe):
     _, Qe_mod = _static_condense_release(k, Qe, released_dofs)
 
     return k_mod, Qf_mod, Qh_mod, Qe_mod
-
-
-def _is_released_at_node(i_node, j_node, MT, node_id):
-    """
-    Check whether the element end at node_id is released.
-    """
-    if node_id == i_node:
-        return MT in (1, 3)
-
-    if node_id == j_node:
-        return MT in (2, 3)
-
-    return False
-
-
-def find_fully_released_nodes(elements, element_paras):
-    """
-    Find nodes whose every connected element end is released.
-
-    Parameters
-    ----------
-    elements : dict
-        Element data read from json.
-    element_paras : dict
-        Element parameter dictionary returned by build_elements_para().
-
-    Returns
-    -------
-    np.ndarray
-        Sorted node IDs (int) whose all connected member ends are released.
-    """
-    node_release_flags = {}
-
-    for e_id in elements:
-        i_node = elements[e_id][3][0]
-        j_node = elements[e_id][3][1]
-        MT = int(element_paras[e_id][8])
-
-        node_release_flags.setdefault(i_node, []).append(
-            _is_released_at_node(i_node, j_node, MT, i_node)
-        )
-        node_release_flags.setdefault(j_node, []).append(
-            _is_released_at_node(i_node, j_node, MT, j_node)
-        )
-
-    fully_released_nodes = [
-        node_id for node_id, flags in node_release_flags.items() if flags and all(flags)
-    ]
-
-    return np.array(sorted(fully_released_nodes), dtype=int)
-
-
-def rotational_dofs_1based(node_id):
-    """
-    Return [Rx, Ry, Rz] DOFs for a 3D frame node in 1-based numbering.
-    """
-    base = 6 * (node_id - 1)
-    return np.array([base + 4, base + 5, base + 6], dtype=int)
-
-
-def fictitious_rotational_dofs_1based(fully_released_nodes):
-    """
-    Convert fully released node IDs into fictitious rotational DOFs.
-    """
-    dofs = []
-
-    for node_id in fully_released_nodes:
-        dofs.extend(rotational_dofs_1based(node_id))
-
-    if not dofs:
-        return np.array([], dtype=int)
-
-    return np.array(sorted(dofs), dtype=int)
 
 
 def heat_cal(temp, E, A, alpha):

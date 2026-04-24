@@ -191,7 +191,7 @@ def _model_extent(nodes):
     return float(max(spans.max(), 1.0))
 
 
-def suggest_deformation_scale(nodes, u_global, target_ratio=0.10):
+def auto_deformation_scale(nodes, u_global, target_ratio=0.10):
     """Auto-select a deformation scale so the deformed shape is readable."""
     u_global = np.asarray(u_global, dtype=float)
     if u_global.size == 0:
@@ -206,7 +206,7 @@ def suggest_deformation_scale(nodes, u_global, target_ratio=0.10):
     return target_ratio * extent / max_disp
 
 
-def suggest_load_scale(nodes, nodal_loads_xyz, target_ratio=0.12):
+def auto_load_scale(nodes, nodal_loads_xyz, target_ratio=0.12):
     """Auto-select a load-arrow scale for plotly cones."""
     if not nodal_loads_xyz:
         return 1.0
@@ -406,12 +406,30 @@ def recover_frame_element_results(filepath, u_global):
 
         u_e_global = extract_element_displacements(u_global, i_node, j_node)
         u_e_local = T @ u_e_global
-        q_local = k_local @ u_e_local + Qt
 
         axial_delta = float(u_e_local[6] - u_e_local[0])
         axial_strain = axial_delta / L if abs(L) > 0.0 else 0.0
         axial_force = (E * A / L) * axial_delta if abs(L) > 0.0 else 0.0
         axial_stress = axial_force / A if abs(A) > 0.0 else 0.0
+
+        etype = str(info["etype"]).strip().upper()
+
+        if etype in ("T", "TRUSS"):
+            q_local = np.zeros(12, dtype=float)
+
+            # Truss elements only have local axial end forces.
+            # Positive N means tension.
+            q_local[0] = -axial_force
+            q_local[6] = axial_force
+
+        elif etype in ("F", "FRAME"):
+            q_local = k_local @ u_e_local + Qt
+
+        else:
+            raise ValueError(
+                f"Unsupported element type for element {e_id}: {info['etype']}. "
+                "Supported types are T/TRUSS and F/FRAME."
+            )
 
         results[e_id] = {
             **info,
@@ -700,8 +718,8 @@ def axial_shape_functions(x, L):
     return N1, N2
 
 
-def cubic_shape_functions(x, L):
-    """Cubic Hermite shape functions for local transverse displacement."""
+def spatial_shape_functions(x, L):
+    """Spatial Hermite shape functions for local transverse displacement."""
     x = np.asarray(x, dtype=float)
     xi = x / L
 
@@ -733,7 +751,7 @@ def frame_shape_functions_3d(x, L, use_minus_for_ry=True):
     x = np.atleast_1d(x)
 
     Na1, Na2 = axial_shape_functions(x, L)
-    H1, H2, H3, H4 = cubic_shape_functions(x, L)
+    H1, H2, H3, H4 = spatial_shape_functions(x, L)
     sign = -1.0 if use_minus_for_ry else 1.0
 
     N = np.zeros((x.size, 3, 12), dtype=float)
@@ -813,7 +831,7 @@ def _plot_line_model(
 ):
     """Shared undeformed-model plot for both truss and frame."""
     if load_scale is None:
-        load_scale = suggest_load_scale(nodes, nodal_loads_xyz)
+        load_scale = auto_load_scale(nodes, nodal_loads_xyz)
 
     fig = go.Figure()
 
@@ -999,10 +1017,32 @@ def plot_frame_model(
     )
 
 
+def plot_hybrid_model(
+    nodes,
+    elements,
+    constraints=None,
+    nodal_loads_xyz=None,
+    show_node_ids=True,
+    show_member_ids=False,
+    load_scale=None,
+):
+    """Plot undeformed mixed truss-frame model, supports, and nodal loads."""
+    return _plot_line_model(
+        nodes,
+        elements,
+        constraints=constraints,
+        nodal_loads_xyz=nodal_loads_xyz,
+        show_node_ids=show_node_ids,
+        show_member_ids=show_member_ids,
+        load_scale=load_scale,
+        title="3D Hybrid Truss-Frame Model",
+    )
+
+
 def plot_truss_deformation(nodes, elements, u_global, scale=None):
     """Plot undeformed and deformed truss geometry."""
     if scale is None:
-        scale = suggest_deformation_scale(nodes, u_global)
+        scale = auto_deformation_scale(nodes, u_global)
 
     u_global = np.asarray(u_global, dtype=float).reshape(-1)
 
@@ -1074,7 +1114,7 @@ def plot_frame_deformation(
 ):
     """Plot undeformed and deformed 3D frame geometry with cubic centerline interpolation."""
     if scale is None:
-        scale = suggest_deformation_scale(nodes, u_global)
+        scale = auto_deformation_scale(nodes, u_global)
 
     u_global = np.asarray(u_global, dtype=float).reshape(-1)
 
@@ -1158,6 +1198,134 @@ def plot_frame_deformation(
 
     fig.update_layout(
         title=f"Original and Deformed Frame (scale = {scale:.3g})",
+        scene=dict(
+            xaxis_title="X",
+            yaxis_title="Y",
+            zaxis_title="Z",
+            aspectmode="data",
+        ),
+        margin=dict(l=0, r=0, t=40, b=0),
+    )
+
+    fig.show()
+    return fig
+
+
+def plot_hybrid_deformation(
+    nodes,
+    elements,
+    member_results,
+    u_global,
+    scale=None,
+    npts=100,
+    use_minus_for_ry=True,
+):
+    """
+    Plot undeformed and deformed geometry for a mixed truss-frame model.
+
+    T / TRUSS elements are drawn as straight lines between deformed end nodes.
+    F / FRAME elements are drawn with 3D frame shape functions so bending is visible.
+    """
+    if scale is None:
+        scale = auto_deformation_scale(nodes, u_global)
+
+    u_global = np.asarray(u_global, dtype=float).reshape(-1)
+
+    fig = go.Figure()
+
+    x0, y0, z0 = [], [], []
+    xd, yd, zd = [], [], []
+
+    for e_id in sorted(elements.keys()):
+        r = member_results[e_id]
+        etype = str(r["etype"]).strip().upper()
+        i_node = int(r["i_node"])
+        j_node = int(r["j_node"])
+
+        Xi = np.asarray(nodes[i_node], dtype=float)
+        Xj = np.asarray(nodes[j_node], dtype=float)
+
+        if etype in ("T", "TRUSS"):
+            ui = u_global[6 * (i_node - 1) : 6 * (i_node - 1) + 6]
+            uj = u_global[6 * (j_node - 1) : 6 * (j_node - 1) + 6]
+
+            p0_global = np.vstack([Xi, Xj])
+            p1_global = np.vstack(
+                [
+                    Xi + scale * ui[:3],
+                    Xj + scale * uj[:3],
+                ]
+            )
+
+        elif etype in ("F", "FRAME"):
+            L = float(r["L"])
+            gamma = np.asarray(r["gamma"], dtype=float)
+            d_local = np.asarray(r["u_e_local"], dtype=float)
+
+            x_local = np.linspace(0.0, L, npts)
+            u_loc, v_loc, w_loc, _ = frame_centerline_local_3d(
+                x_local,
+                L,
+                d_local,
+                use_minus_for_ry=use_minus_for_ry,
+            )
+
+            p0_local = np.column_stack(
+                [
+                    x_local,
+                    np.zeros_like(x_local),
+                    np.zeros_like(x_local),
+                ]
+            )
+            p1_local = np.column_stack(
+                [
+                    x_local + scale * u_loc,
+                    scale * v_loc,
+                    scale * w_loc,
+                ]
+            )
+
+            p0_global = _local_points_to_global(p0_local, Xi, gamma)
+            p1_global = _local_points_to_global(p1_local, Xi, gamma)
+
+        else:
+            raise ValueError(
+                f"Unsupported element type for element {e_id}: {r['etype']}. "
+                "Supported types are T/TRUSS and F/FRAME."
+            )
+
+        x0 += list(p0_global[:, 0]) + [None]
+        y0 += list(p0_global[:, 1]) + [None]
+        z0 += list(p0_global[:, 2]) + [None]
+
+        xd += list(p1_global[:, 0]) + [None]
+        yd += list(p1_global[:, 1]) + [None]
+        zd += list(p1_global[:, 2]) + [None]
+
+    fig.add_trace(
+        go.Scatter3d(
+            x=x0,
+            y=y0,
+            z=z0,
+            mode="lines",
+            name="Original",
+            line=dict(width=4, color="blue"),
+        )
+    )
+
+    fig.add_trace(
+        go.Scatter3d(
+            x=xd,
+            y=yd,
+            z=zd,
+            mode="lines",
+            name="Deformed",
+            line=dict(width=4, color="red"),
+        )
+    )
+
+    fig.update_layout(
+        title=f"Original and Deformed Hybrid Model (scale = {scale:.3g})",
         scene=dict(
             xaxis_title="X",
             yaxis_title="Y",
@@ -1339,6 +1507,110 @@ def frame_output(
         fig_deformation = plot_frame_deformation(
             nodes,
             elements,
+            solver_result["u_global"],
+            scale=deformation_scale,
+            npts=npts,
+            use_minus_for_ry=use_minus_for_ry,
+        )
+
+    show_tables = show and (table_output not in ("xlsx",))
+
+    if show_tables:
+        _show_df(df_node_disp, decimals=6)
+        _show_df(df_disp_summary, decimals=6)
+        if not df_reactions.empty:
+            _show_df(df_reactions, decimals=6)
+        _show_df(df_member_summary, decimals=6)
+        _show_df(df_member_full, decimals=6)
+
+    return {
+        "fig_model": fig_model,
+        "fig_deformation": fig_deformation,
+        "df_node_disp": df_node_disp,
+        "df_disp_summary": df_disp_summary,
+        "df_reactions": df_reactions,
+        "df_member_summary": df_member_summary,
+        "df_member_full": df_member_full,
+        "member_results": member_results,
+        "units": units,
+        "xlsx_path": xlsx_path,
+    }
+
+
+def hybrid_output(
+    filepath,
+    solver_result,
+    deformation_scale=None,
+    load_scale=None,
+    show_node_ids=True,
+    show_member_ids=False,
+    show=True,
+    table_output=None,
+    npts=100,
+    use_minus_for_ry=True,
+):
+    """
+    Integrated mixed truss-frame postprocess entry.
+
+    The model plot is shared with the truss/frame outputs. The deformation plot
+    is element-type dependent:
+    - T / TRUSS elements are drawn as straight deformed members.
+    - F / FRAME elements are drawn with 3D frame shape functions.
+    """
+    solver_result = _normalize_solver_result(solver_result)
+    units = _read_units(filepath)
+
+    raw, member_results = recover_frame_element_results(
+        filepath,
+        solver_result["u_global"],
+    )
+
+    nodes = raw["nodes"]
+    elements = raw["elements"]
+    constraints = raw["constraints"]
+    nodal_loads_xyz = _vector_to_nodal_xyz(raw["F_global"], nodes)
+
+    df_node_disp = build_node_displacement_df(nodes, solver_result["u_global"], units)
+    df_disp_summary = build_max_displacement_summary(df_node_disp, units)
+    df_reactions = build_reaction_df(
+        constraints,
+        solver_result.get("f_global_complete"),
+        units,
+    )
+    df_member_summary = build_frame_member_summary_df(member_results, units)
+    df_member_full = build_frame_member_full_df(member_results, units)
+
+    fig_model = None
+    fig_deformation = None
+    xlsx_path = None
+
+    if table_output not in (None, "None", "xlsx"):
+        raise ValueError("table_output must be 'xlsx', None, or 'None'.")
+
+    if table_output == "xlsx":
+        tables = [
+            ("Node Displacements", df_node_disp),
+            ("Maximum Displacement Summary", df_disp_summary),
+            ("Reaction Forces", df_reactions),
+            ("Hybrid Member Summary", df_member_summary),
+            ("Hybrid Member Full Results", df_member_full),
+        ]
+        xlsx_path = _export_tables_to_excel(filepath, tables)
+
+    if show:
+        fig_model = plot_hybrid_model(
+            nodes,
+            elements,
+            constraints=constraints,
+            nodal_loads_xyz=nodal_loads_xyz,
+            show_node_ids=show_node_ids,
+            show_member_ids=show_member_ids,
+            load_scale=load_scale,
+        )
+        fig_deformation = plot_hybrid_deformation(
+            nodes,
+            elements,
+            member_results,
             solver_result["u_global"],
             scale=deformation_scale,
             npts=npts,
