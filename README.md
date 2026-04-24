@@ -1019,7 +1019,7 @@ Therefore, the middle span adopts a **higher arch rib** than the two side spans,
 
 In terms of element modeling, the bridge is defined as a **mixed truss-frame system**:
 
-- The **arch rib members** are modeled as **FRAME** elements so that their bending behavior can be considered
+- The **arch rib members，all upper and lower longitudinal chords of the truss** are modeled as **FRAME** elements so that they can withstand member loads
 - All other members are modeled as **TRUSS** elements
 - This includes the main truss chords, vertical members, diagonal members, transverse connecting members, and the arch-foot transition members
 - In the current model, the arch ribs are the only members assigned as frame elements, while the remaining structural members are treated as axial-force members
@@ -1084,12 +1084,12 @@ The structural geometry, element connectivity, material, section, and support de
 
 This file includes multiple load effects in one model:
 
-- Downward nodal loads are applied at selected deck nodes
-- The nodal load magnitudes are not uniform
-- A uniformly distributed member load of `q_global = [0.0, 0.0, -120.0]` kN/m is applied to selected elements
+- Downward nodal loads are applied nonuniformly at selected deck nodes
+- One continues line loads is applied at a part of the lower longitudinal members
+- A uniformly distributed member load of `q_global = [0.0, 0.0, -120.0]` kN/m is applied to upper and lower chords
 - Nonuniform support displacements are assigned at selected support nodes
 - The imposed support movement includes different values of $u_x$, $u_y$, and $u_z$
-- A uniform temperature load `TEMP = 50.0` is applied in this case
+- A uniform temperature change of `TEMP = 50.0` is applied to all members.
 
 This file is intended to represent a more realistic comprehensive loading condition of the final bridge model, in which distributed live load effects and support movement are considered simultaneously.
 
